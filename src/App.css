@@ -8,7 +8,11 @@
   display: flex;
   height: 100svh;
   overflow: hidden;
-  background: var(--bg-base);
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 10%, rgba(79, 126, 255, 0.055) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 45% at 88% 85%, rgba(139, 92, 246, 0.045) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(79, 126, 255, 0.03) 0%, transparent 50%),
+    #0e1015;
 }
 
 .app-main {
@@ -1608,9 +1612,33 @@
 
 /* ── Minimal Visual Polish ────────────────────────────────── */
 
-/* Login page: subtle radial background depth */
+
+/* Login page: rich atmospheric background with mouse-follow glow */
 .login-page {
-  background: radial-gradient(ellipse at 50% 0%, rgba(79,126,255,0.07) 0%, transparent 70%), var(--bg-base);
+  background:
+    /* Mouse-follow ambient glow — driven by --mouse-x / --mouse-y via JS */
+    radial-gradient(
+      circle 600px at var(--mouse-x, 50%) var(--mouse-y, 42%),
+      rgba(79, 126, 255, 0.07) 0%,
+      transparent 70%
+    ),
+    /* Static atmospheric layers */
+    radial-gradient(ellipse 90% 55% at 20% 15%, rgba(79, 126, 255, 0.08) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 50% at 82% 88%, rgba(139, 92, 246, 0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 35% at 60% 5%,  rgba(79, 126, 255, 0.04) 0%, transparent 55%),
+    #0c0f14;
+  transition: background 0.05s linear;
+}
+
+/* Disable mouse-follow transition under reduced-motion to respect preference */
+@media (prefers-reduced-motion: reduce) {
+  .login-page {
+    background:
+      radial-gradient(ellipse 90% 55% at 20% 15%, rgba(79, 126, 255, 0.08) 0%, transparent 65%),
+      radial-gradient(ellipse 70% 50% at 82% 88%, rgba(139, 92, 246, 0.07) 0%, transparent 65%),
+      #0c0f14;
+    transition: none;
+  }
 }
 
 /* Login box: slightly stronger border and shadow */

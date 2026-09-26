@@ -1,9 +1,41 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
+  const pageRef = useRef(null)
+
+  // Efficient mouse-follow ambient glow — updates CSS vars directly, no React re-renders
+  useEffect(() => {
+    const el = pageRef.current
+    if (!el) return
+
+    // Respect reduced-motion preference and skip on touch-primary devices
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const isTouchPrimary = window.matchMedia('(hover: none)').matches
+    if (prefersReduced || isTouchPrimary) return
+
+    let rafId = null
+
+    const handleMouseMove = (e) => {
+      // Cancel any pending frame to throttle to one update per animation frame
+      if (rafId) cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect()
+        const x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(2) + '%'
+        const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(2) + '%'
+        el.style.setProperty('--mouse-x', x)
+        el.style.setProperty('--mouse-y', y)
+      })
+    }
+
+    el.addEventListener('mousemove', handleMouseMove, { passive: true })
+    return () => {
+      el.removeEventListener('mousemove', handleMouseMove)
+      if (rafId) cancelAnimationFrame(rafId)
+    }
+  }, [])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -20,7 +52,7 @@ export default function LoginPage({ onLogin }) {
   }
 
   return (
-    <div className="login-page">
+    <div className="login-page" ref={pageRef}>
       <div className="login-box">
         {/* Logo */}
         <div className="login-logo">
