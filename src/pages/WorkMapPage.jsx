@@ -24,17 +24,26 @@ export default function WorkMapPage({ generatedWorkflowData, automationState }) 
   // Use service names as nodes (short enough for the diagram)
   const steps = wf.actions.map(a => a.service)
 
+  // Display badge: Do not display "Completed" badge on Work Map
+  const isCompleted = wf.status === 'Completed' || (automationState.status === 'completed' && automationState.activeWorkflow?.id === wf.id)
+  const showBadge = !isCompleted && wf.status !== 'Completed'
+
   return (
     <div className="page-content">
       <div className="panel">
-        <div className="panel-header">
+        <div className="panel-header" style={{ marginBottom: 16 }}>
           <span className="panel-title">{wf.name}</span>
-          <span className={`badge badge-${wf.status === 'Approved' ? 'green' : wf.status === 'Rejected' ? 'red' : 'amber'}`}>
-            {wf.status}
-          </span>
+          {showBadge && (
+            <span className={`badge badge-${wf.status === 'Approved' ? 'green' : wf.status === 'Rejected' ? 'red' : 'amber'}`}>
+              {wf.status}
+            </span>
+          )}
         </div>
 
-        <p className="dim-text" style={{ marginBottom: 24 }}>Trigger: {wf.trigger}</p>
+        {/* Trigger display removed for Process Customer Request */}
+        {wf.name !== 'Process Customer Request' && wf.trigger && (
+          <p className="dim-text" style={{ marginBottom: 24 }}>Trigger: {wf.trigger}</p>
+        )}
 
         {/* Node diagram */}
         <div className="workmap-diagram-area">

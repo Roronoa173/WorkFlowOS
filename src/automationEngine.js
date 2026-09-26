@@ -22,9 +22,9 @@
 export function executeWorkflow(workflow, callbacks = {}) {
   const { onActionUpdate, onLog, onComplete, onInterrupted, onError } = callbacks
 
-  // Guard: Workflow must be approved before execution
-  if (!workflow || workflow.status !== 'Approved') {
-    const errorMsg = 'Execution blocked: Workflow must be in Approved status to run.'
+  // Guard: Workflow must be approved before execution, and cannot be run if already completed
+  if (!workflow || workflow.status !== 'Approved' || workflow.isCompleted || workflow.executionCompleted) {
+    const errorMsg = 'Execution blocked: Workflow must be in Approved status to run and cannot be re-executed once Completed.'
     if (onError) onError(errorMsg)
     return { stop: () => {} }
   }

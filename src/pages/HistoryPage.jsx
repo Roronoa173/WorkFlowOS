@@ -1,95 +1,144 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 
-// History is derived from automationState — one entry per completed/interrupted run
-export default function HistoryPage({ automationState, generatedWorkflowData }) {
-  const [expanded, setExpanded] = useState(false)
+export default function HistoryPage({
+  historyRecords = [],
+  onDeleteHistoryRecord,
+}) {
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(null) // { id, workflowName }
 
-  const hasRun = automationState.status !== 'idle'
-
-  const entries = hasRun && generatedWorkflowData ? [
-    {
-      id: 'run-1',
-      date: new Date().toLocaleDateString(),
-      workflow: generatedWorkflowData.name,
-      status: automationState.status,
-      actions: automationState.actionsState.length,
-      completed: automationState.actionsState.filter(a => a.status === 'completed').length,
-      logs: automationState.logs,
+  // Unique workflow names for the dropdown
+  const uniqueWorkflows = []
+  const seen = new Set()
+  for (const r of historyRecords) {
+    if (!seen.has(r.workflowId)) {
+      seen.add(r.workflowId)
+      uniqueWorkflows.push({ id: r.workflowId, name: r.workflowName })
     }
-  ] : []
+  }
+
+  const filtered = selectedWorkflowId
+    ? historyRecords.filter(r => r.workflowId === selectedWorkflowId)
+    : historyRecords
+
+  const handleDeleteClick = (record) => {
+    setConfirmDelete({ id: record.id, workflowName: record.workflowName })
+  }
+
+  const handleConfirmYes = () => {
+    if (confirmDelete && onDeleteHistoryRecord) {
+      onDeleteHistoryRecord(confirmDelete.id)
+    }
+    setConfirmDelete(null)
+  }
+
+  const statusBadgeClass = (status) => {
+    if (status === 'Completed')  return 'badge badge-green badge-sm'
+    if (status === 'Interrupted') return 'badge badge-red badge-sm'
+    if (status === 'Rejected')   return 'badge badge-amber badge-sm'
+    return 'badge badge-dim badge-sm'
+  }
 
   return (
     <div className="page-content">
+      {/* Workflow filter dropdown */}
+      <div className="monitor-toolbar">
+        <div className="wf-dropdown-wrap">
+          <select
+            className="wf-dropdown-select"
+            value={selectedWorkflowId}
+            onChange={e => setSelectedWorkflowId(e.target.value)}
+          >
+            <option value="">All Workflows</option>
+            {uniqueWorkflows.map(w => (
+              <option key={w.id} value={w.id}>{w.name}</option>
+            ))}
+          </select>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="wf-dropdown-chevron"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+
       <div className="panel">
-        {entries.length === 0 ? (
+        {filtered.length === 0 ? (
           <div className="empty-state" style={{ padding: '60px 24px' }}>
             <p>No execution history yet.</p>
-            <small>Run a workflow to see history here.</small>
+            <small>Run, interrupt, or reject a workflow to see history here.</small>
           </div>
         ) : (
-          <>
-            <div className="table-wrap">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Workflow</th>
-                    <th>Actions</th>
-                    <th>Completed</th>
-                    <th>Status</th>
-                    <th></th>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Workflow</th>
+                  <th>Actions</th>
+                  <th>Completed</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(record => (
+                  <tr key={record.id}>
+                    <td className="td-time">{record.date}</td>
+                    <td className="td-bold">{record.workflowName}</td>
+                    <td className="td-num">{record.actions}</td>
+                    <td className="td-num">{record.completed}</td>
+                    <td>
+                      <span className={statusBadgeClass(record.status)}>
+                        {record.status}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        className="icon-btn"
+                        style={{ color: 'var(--red)', borderColor: 'var(--red-border)' }}
+                        title={`Delete history for ${record.workflowName}`}
+                        onClick={() => handleDeleteClick(record)}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {entries.map(entry => (
-                    <>
-                      <tr key={entry.id}>
-                        <td className="td-time">{entry.date}</td>
-                        <td className="td-bold">{entry.workflow}</td>
-                        <td>{entry.actions}</td>
-                        <td>{entry.completed}</td>
-                        <td>
-                          <span className={`badge badge-sm badge-${entry.status === 'completed' ? 'green' : entry.status === 'interrupted' ? 'red' : 'blue'}`}>
-                            {entry.status}
-                          </span>
-                        </td>
-                        <td>
-                          <button
-                            className="icon-btn"
-                            onClick={() => setExpanded(v => !v)}
-                            title="Toggle logs"
-                          >
-                            {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                          </button>
-                        </td>
-                      </tr>
-                      {expanded && (
-                        <tr key={entry.id + '-logs'}>
-                          <td colSpan={6} style={{ padding: '0 0 12px 0' }}>
-                            <div className="log-console" style={{ margin: '8px 16px' }}>
-                              {entry.logs.length === 0 ? (
-                                <div className="log-line"><span className="log-txt dim-text">No log entries.</span></div>
-                              ) : (
-                                entry.logs.map((log, i) => (
-                                  <div key={i} className={`log-line log-line-${log.type || 'info'}`}>
-                                    <span className="log-ts">[{log.timestamp}]</span>
-                                    <span className="log-txt">{log.text}</span>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
+
+      {/* Confirmation modal */}
+      {confirmDelete && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <span className="modal-title">Permanently Delete History?</span>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+                Are you sure you want to permanently delete the history record for{' '}
+                <strong style={{ color: 'var(--text-primary)' }}>{confirmDelete.workflowName}</strong>?
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setConfirmDelete(null)}
+              >
+                No
+              </button>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={handleConfirmYes}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

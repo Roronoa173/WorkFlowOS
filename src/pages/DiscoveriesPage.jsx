@@ -4,11 +4,14 @@ export default function DiscoveriesPage({
   detectedResult,
   isAnalyzingAi,
   aiAnalysis,
+  workflowStatus, // 'pending' | 'approved' | 'rejected' | 'completed'
   onUnderstandWithAI,
   onGenerateWorkflow,
-  onIgnore,
+  onDeleteDiscovery,
 }) {
   const DEMO_STEPS = ['Gmail', 'Download', 'CRM', 'Slack']
+
+  const isRejected = workflowStatus === 'rejected' || workflowStatus === 'Rejected'
 
   return (
     <div className="page-content">
@@ -25,8 +28,8 @@ export default function DiscoveriesPage({
           <div className="discovery-card-new">
             <div className="disc-card-header">
               <div>
-                <span className="badge badge-blue" style={{ marginBottom: 8, display: 'inline-block' }}>
-                  Pattern Detected
+                <span className={`badge ${isRejected ? 'badge-red' : 'badge-blue'}`} style={{ marginBottom: 8, display: 'inline-block' }}>
+                  {isRejected ? 'Rejected' : 'Pattern Detected'}
                 </span>
                 <h3 className="disc-workflow-name">{detectedResult.workflowName}</h3>
               </div>
@@ -52,30 +55,31 @@ export default function DiscoveriesPage({
               ))}
             </div>
 
-            <div className="disc-card-actions">
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={onUnderstandWithAI}
-                disabled={isAnalyzingAi}
-              >
-                {isAnalyzingAi ? 'Analyzing…' : 'Understand with AI'}
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={onGenerateWorkflow}
-                disabled={!aiAnalysis}
-                title={!aiAnalysis ? 'Run AI understanding first' : ''}
-              >
-                Generate Workflow
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={onIgnore}>
-                Dismiss
-              </button>
+            <div className="disc-card-actions" style={{ alignItems: 'center' }}>
+              {!isRejected && (
+                <>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={onUnderstandWithAI}
+                    disabled={isAnalyzingAi}
+                  >
+                    {isAnalyzingAi ? 'Analyzing…' : 'Understand with AI'}
+                  </button>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={onGenerateWorkflow}
+                    disabled={!aiAnalysis}
+                    title={!aiAnalysis ? 'Run AI understanding first' : ''}
+                  >
+                    Generate Workflow
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
-          {/* AI Analysis Panel (shows when available) */}
-          {aiAnalysis && (
+          {/* AI Analysis Panel (shows when available and not rejected) */}
+          {aiAnalysis && !isRejected && (
             <div className="panel ai-panel">
               <div className="panel-header">
                 <span className="panel-title">AI Understanding</span>

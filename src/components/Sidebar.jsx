@@ -57,7 +57,7 @@ export default function Sidebar({
         <div className="monitoring-controls">
           <div className="recording-status-row">
             <span className={`rec-dot ${isRecording ? 'rec-dot-active' : ''}`} />
-            <span className="rec-label">{isRecording ? 'Recording' : 'Idle'}</span>
+            <span className="rec-label">Online</span>
           </div>
           <div className="monitoring-btns">
             {!isRecording ? (
@@ -68,7 +68,7 @@ export default function Sidebar({
             ) : (
               <button className="mon-btn mon-btn-stop" onClick={onStopRecording}>
                 <Square size={8} fill="currentColor" />
-                Pause
+                Stop
               </button>
             )}
             <button className="mon-btn mon-btn-clear" onClick={onClearActivities} title="Clear all activities">

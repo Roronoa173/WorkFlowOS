@@ -5,7 +5,6 @@ const SECTIONS = [
     id: 'general',
     title: 'General',
     fields: [
-      { label: 'Workspace Name', type: 'text',   value: 'My Workspace' },
       { label: 'Language',       type: 'select', value: 'English', options: ['English', 'Spanish', 'French'] },
       { label: 'Time Zone',      type: 'select', value: 'Asia/Kolkata', options: ['Asia/Kolkata', 'UTC', 'America/New_York'] },
     ]
@@ -15,7 +14,6 @@ const SECTIONS = [
     title: 'Monitoring',
     fields: [
       { label: 'Auto-start recording on login', type: 'toggle', value: false },
-      { label: 'Idle timeout (minutes)',         type: 'number', value: 2 },
       { label: 'Record UI events',               type: 'toggle', value: true },
     ]
   },

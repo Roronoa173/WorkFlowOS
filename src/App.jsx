@@ -47,6 +47,31 @@ function App() {
   // ── Activities
   const [activities, setActivities] = useState([])
 
+  // ── Named Workflow Sessions (Dashboard requirement)
+  const [workflowSessions, setWorkflowSessions] = useState([])
+  const [activeSessionId, setActiveSessionId]   = useState(null)
+  const [isNameModalOpen, setIsNameModalOpen]   = useState(false)
+  const [pendingWorkflowName, setPendingWorkflowName] = useState('')
+
+  const activeSessionIdRef = useRef(activeSessionId)
+  const workflowSessionsRef = useRef(workflowSessions)
+  useEffect(() => {
+    activeSessionIdRef.current = activeSessionId
+    workflowSessionsRef.current = workflowSessions
+  }, [activeSessionId, workflowSessions])
+
+  // ── Persistent History Records (survive workflow deletion)
+  const [historyRecords, setHistoryRecords] = useState([])
+
+  // ── Recording navigation warning
+  const [navWarningTarget, setNavWarningTarget] = useState(null)
+
+  // ── Process Control Request State ('pending' | 'approved' | 'rejected' | 'completed')
+  const [discoveryState, setDiscoveryState] = useState({
+    deleted: false,
+    status: 'pending' // pending | approved | rejected | completed
+  })
+
   // ── AI Understanding
   const [aiAnalysis,    setAiAnalysis]    = useState(null)
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false)
@@ -99,8 +124,13 @@ function App() {
       let label = target.innerText?.trim() || target.getAttribute('aria-label') || target.tagName.toLowerCase()
       if (label.length > 25) label = label.slice(0, 25) + '...'
 
+      const currentActiveId = activeSessionIdRef.current
+      const currentSession = workflowSessionsRef.current.find(s => s.id === currentActiveId)
+
       const newEvent = {
         id: 'rec-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        workflowId: currentActiveId || undefined,
+        workflowName: currentSession ? currentSession.name : undefined,
         app: 'Web Browser',
         action: `Clicked "${label}" (${target.tagName.toLowerCase()})`,
         time: formatTimestamp(),
@@ -108,6 +138,17 @@ function App() {
         category: 'raw_ui'
       }
       setActivities(prev => [newEvent, ...prev])
+      if (currentActiveId) {
+        setWorkflowSessions(prev => prev.map(s => {
+          if (s.id === currentActiveId) {
+            return {
+              ...s,
+              activities: [newEvent, ...(s.activities || [])]
+            }
+          }
+          return s
+        }))
+      }
     }
 
     window.addEventListener('click', handleClick, true)
@@ -115,7 +156,13 @@ function App() {
   }, [isRecording])
 
   // ─── Pattern detection (memoised)
-  const detectedResult = useMemo(() => detectRepeatedWorkflow(activities), [activities])
+  const detectedResult = useMemo(() => {
+    if (discoveryState.deleted) {
+      return { detected: false, workflowName: '', sequence: [], repetitions: 0, message: '' }
+    }
+    const rawResult = detectRepeatedWorkflow(activities)
+    return rawResult
+  }, [activities, discoveryState.deleted])
 
   // ─── Hours saved (derived)
   const hoursSaved = (activities.filter(a => a.category === 'business').length * 0.4).toFixed(1)
@@ -128,6 +175,11 @@ function App() {
     setActivePage('dashboard')
     setIsRecording(false)
     setActivities([])
+    setWorkflowSessions([])
+    setActiveSessionId(null)
+    setIsNameModalOpen(false)
+    setPendingWorkflowName('')
+    setDiscoveryState({ deleted: false, status: 'pending' })
     setAiAnalysis(null)
     setGeneratedWorkflowData(null)
     setSimulatorError('')
@@ -135,8 +187,48 @@ function App() {
     if (engineHandleRef.current) engineHandleRef.current.stop()
   }
 
-  // ─── Recording handlers
+  // ─── Recording handlers (Step 1 & 2: Start opens popup modal)
   const handleStartRecording = () => {
+    // If not currently recording, open modal to ask for workflow name
+    setPendingWorkflowName(`Workflow ${workflowSessions.length + 1}`)
+    setIsNameModalOpen(true)
+  }
+
+  const handleConfirmStartRecording = (customName) => {
+    const finalName = (customName && customName.trim()) || `Workflow ${workflowSessions.length + 1}`
+    const newSessionId = 'wf-sess-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)
+    
+    const initialWorkflow = generateWorkflow({ intent: finalName })
+    initialWorkflow.id = newSessionId
+    initialWorkflow.workflowId = newSessionId
+    initialWorkflow.name = finalName
+    initialWorkflow.status = 'Draft'
+
+    const initialAutomation = {
+      status: 'idle',
+      activeWorkflow: initialWorkflow,
+      actionsState: initialWorkflow.actions.map(act => ({ ...act, status: 'pending' })),
+      logs: [],
+      message: ''
+    }
+
+    const newSession = {
+      id: newSessionId,
+      name: finalName,
+      status: 'active',
+      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      activities: [],
+      detectedResult: null,
+      discoveryState: { deleted: false, status: 'pending' },
+      generatedWorkflowData: initialWorkflow,
+      automationState: initialAutomation,
+    }
+
+    setWorkflowSessions(prev => [newSession, ...prev])
+    setActiveSessionId(newSessionId)
+    setGeneratedWorkflowData(initialWorkflow)
+    setAutomationState(initialAutomation)
+    setIsNameModalOpen(false)
     setIsRecording(true)
     setMonitoringStatus('active')
     setSimulatorError('')
@@ -146,6 +238,39 @@ function App() {
   const handleStopRecording = () => {
     setIsRecording(false)
     setMonitoringStatus('idle')
+    if (activeSessionId) {
+      setWorkflowSessions(prev => prev.map(s => 
+        s.id === activeSessionId ? { ...s, status: 'saved' } : s
+      ))
+    }
+  }
+
+  // Helper to record new activities to global activities list AND active session
+  const addActivities = (newItems) => {
+    const currentActiveId = activeSessionIdRef.current
+    const currentSession = workflowSessionsRef.current.find(s => s.id === currentActiveId)
+    
+    const taggedItems = newItems.map(item => ({
+      ...item,
+      workflowId: item.workflowId || currentActiveId || undefined,
+      workflowName: item.workflowName || (currentSession ? currentSession.name : undefined)
+    }))
+
+    setActivities(prev => [...taggedItems, ...prev])
+    if (currentActiveId) {
+      setWorkflowSessions(prev => prev.map(s => {
+        if (s.id === currentActiveId) {
+          const updatedActs = [...taggedItems, ...(s.activities || [])]
+          const updatedDetection = detectRepeatedWorkflow(updatedActs)
+          return {
+            ...s,
+            activities: updatedActs,
+            detectedResult: updatedDetection
+          }
+        }
+        return s
+      }))
+    }
   }
 
   // ─── Customer Request Submission (FIX 1: recording gate preserved exactly)
@@ -160,6 +285,9 @@ function App() {
 
     setSimulatorError('')
 
+    const currentActiveId = activeSessionIdRef.current || activeSessionId
+    const currentSession = workflowSessionsRef.current.find(s => s.id === currentActiveId)
+
     const now = new Date()
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     const cust = customerName.trim() || 'Anonymous Customer'
@@ -171,37 +299,47 @@ function App() {
     const businessSequence = [
       {
         id: 'evt-1-' + Date.now() + '-' + Math.random().toString(36).substr(2, 3),
+        workflowId: currentActiveId,
+        workflowName: currentSession ? currentSession.name : undefined,
         app: 'WorkFlowOS', actionType: 'Customer Request Submitted',
         action: `Customer Request Submitted (${cust} - "${req}")`,
         time: timeStr, type: 'recorded', category: 'business', data: structuredEventData
       },
       {
         id: 'evt-2-' + Date.now() + '-' + Math.random().toString(36).substr(2, 3),
+        workflowId: currentActiveId,
+        workflowName: currentSession ? currentSession.name : undefined,
         app: 'Gmail', actionType: 'Email Received',
         action: `Email Received from ${cust}`,
         time: timeStr, type: 'recorded', category: 'business'
       },
       {
         id: 'evt-3-' + Date.now() + '-' + Math.random().toString(36).substr(2, 3),
+        workflowId: currentActiveId,
+        workflowName: currentSession ? currentSession.name : undefined,
         app: 'File System', actionType: 'Attachment Downloaded',
         action: `Attachment Downloaded ("${att}")`,
         time: timeStr, type: 'recorded', category: 'business'
       },
       {
         id: 'evt-4-' + Date.now() + '-' + Math.random().toString(36).substr(2, 3),
+        workflowId: currentActiveId,
+        workflowName: currentSession ? currentSession.name : undefined,
         app: 'CRM', actionType: 'CRM Record Updated',
         action: `CRM Record Updated for ${cust}`,
         time: timeStr, type: 'recorded', category: 'business'
       },
       {
         id: 'evt-5-' + Date.now() + '-' + Math.random().toString(36).substr(2, 3),
+        workflowId: currentActiveId,
+        workflowName: currentSession ? currentSession.name : undefined,
         app: 'Slack', actionType: 'Slack Notification Sent',
         action: `Slack Notification Sent to #support`,
         time: timeStr, type: 'recorded', category: 'business'
       }
     ]
 
-    setActivities(prev => [...businessSequence, ...prev])
+    addActivities(businessSequence)
   }
 
   const handleQuickFill = (name, req, file) => {
@@ -216,8 +354,26 @@ function App() {
     setActivities([])
     setAiAnalysis(null)
     setGeneratedWorkflowData(null)
+    setDiscoveryState({ deleted: false, status: 'pending' })
     setSimulatorError('')
     setAutomationState({ status: 'idle', activeWorkflow: null, actionsState: [], logs: [], message: '' })
+  }
+
+
+  const handleDeleteWorkflow = (workflowId) => {
+    setWorkflowSessions(prev => prev.filter(s => s.id !== workflowId))
+    setActivities(prev => prev.filter(a => a.workflowId !== workflowId))
+    if (activeSessionId === workflowId) {
+      setActiveSessionId(null)
+    }
+    if (generatedWorkflowData && (generatedWorkflowData.id === workflowId || generatedWorkflowData.workflowId === workflowId)) {
+      setGeneratedWorkflowData(null)
+      setDiscoveryState({ deleted: false, status: 'pending' })
+    }
+    if (automationState.activeWorkflow?.id === workflowId) {
+      if (engineHandleRef.current) engineHandleRef.current.stop()
+      setAutomationState({ status: 'idle', activeWorkflow: null, actionsState: [], logs: [], message: '' })
+    }
   }
 
   // ─── AI / Workflow handlers
@@ -231,55 +387,279 @@ function App() {
   }
 
   const handleGenerateWorkflow = () => {
-    const newWorkflow = generateWorkflow(aiAnalysis || {})
+    const currentActiveId = activeSessionIdRef.current || activeSessionId
+    const currentSession = workflowSessionsRef.current.find(s => s.id === currentActiveId)
+    const currentName = currentSession ? currentSession.name : `Workflow ${workflowSessions.length + 1}`
+
+    const newWorkflow = generateWorkflow(aiAnalysis || { intent: currentName })
+    if (currentActiveId) {
+      newWorkflow.id = currentActiveId
+      newWorkflow.workflowId = currentActiveId
+    }
+    newWorkflow.name = currentName
     setGeneratedWorkflowData(newWorkflow)
+
+    setWorkflowSessions(prev => {
+      if (prev.length > 0 && currentActiveId) {
+        return prev.map(s => {
+          if (s.id === currentActiveId) {
+            return {
+              ...s,
+              generatedWorkflowData: newWorkflow,
+              discoveryState: { ...s.discoveryState, status: 'pending' }
+            }
+          }
+          return s
+        })
+      } else if (prev.length > 0) {
+        return prev.map((s, idx) => {
+          if (idx === 0) {
+            return {
+              ...s,
+              generatedWorkflowData: newWorkflow,
+              discoveryState: { ...s.discoveryState, status: 'pending' }
+            }
+          }
+          return s
+        })
+      } else {
+        const newSessionId = 'wf-sess-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4)
+        newWorkflow.id = newSessionId
+        newWorkflow.workflowId = newSessionId
+        return [{
+          id: newSessionId,
+          name: newWorkflow.name,
+          status: 'saved',
+          createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          activities: activities.map(a => ({ ...a, workflowId: newSessionId })),
+          detectedResult,
+          discoveryState: { deleted: false, status: 'pending' },
+          generatedWorkflowData: newWorkflow,
+          automationState: { status: 'idle', activeWorkflow: null, actionsState: [], logs: [], message: '' }
+        }]
+      }
+    })
+
     setActivePage('workflows')
   }
 
-  const handleApproveGeneratedWorkflow = () => {
-    if (!generatedWorkflowData) return
-    setGeneratedWorkflowData(prev => ({ ...prev, status: 'Approved' }))
+  const handleApproveWorkflow = (targetWorkflowId) => {
+    const idToUpdate = targetWorkflowId || activeSessionId
+    setWorkflowSessions(prev => prev.map(s => {
+      if (s.id === idToUpdate) {
+        const currentWf = s.generatedWorkflowData || generateWorkflow({ intent: s.name })
+        return {
+          ...s,
+          generatedWorkflowData: { ...currentWf, status: 'Approved' },
+          discoveryState: { ...s.discoveryState, status: 'approved' }
+        }
+      }
+      return s
+    }))
+    if (!idToUpdate || idToUpdate === activeSessionId || (generatedWorkflowData && generatedWorkflowData.id === idToUpdate)) {
+      setGeneratedWorkflowData(prev => prev ? ({ ...prev, status: 'Approved' }) : null)
+      setDiscoveryState(prev => ({ ...prev, status: 'approved' }))
+    }
   }
 
-  const handleRejectGeneratedWorkflow = () => {
-    if (!generatedWorkflowData) return
-    if (engineHandleRef.current) engineHandleRef.current.stop()
-    setGeneratedWorkflowData(prev => ({ ...prev, status: 'Rejected' }))
+  const handleRejectWorkflow = (targetWorkflowId) => {
+    const idToUpdate = targetWorkflowId || activeSessionId
+    if (engineHandleRef.current && automationState.activeWorkflow?.id === idToUpdate) {
+      engineHandleRef.current.stop()
+    }
+    // Find session name before updating
+    const rejectedSession = workflowSessionsRef.current.find(s => s.id === idToUpdate)
+    setWorkflowSessions(prev => prev.map(s => {
+      if (s.id === idToUpdate) {
+        const currentWf = s.generatedWorkflowData || generateWorkflow({ intent: s.name })
+        return {
+          ...s,
+          generatedWorkflowData: { ...currentWf, status: 'Rejected' },
+          discoveryState: { ...s.discoveryState, status: 'rejected' }
+        }
+      }
+      return s
+    }))
+    if (!idToUpdate || idToUpdate === activeSessionId || (generatedWorkflowData && generatedWorkflowData.id === idToUpdate)) {
+      setGeneratedWorkflowData(prev => prev ? ({ ...prev, status: 'Rejected' }) : null)
+      setDiscoveryState(prev => ({ ...prev, status: 'rejected' }))
+    }
+    // Push persistent history record for rejection
+    setHistoryRecords(prev => [...prev, {
+      id: 'hist-' + Date.now(),
+      workflowId: idToUpdate || 'unknown',
+      workflowName: rejectedSession?.name || 'Workflow',
+      date: new Date().toLocaleDateString('en-GB'),
+      actions: rejectedSession?.generatedWorkflowData?.actions?.length ?? 0,
+      completed: 0,
+      status: 'Rejected',
+    }])
+  }
+
+  const handleDeleteDiscovery = () => {
+    setDiscoveryState({ deleted: true, status: 'pending' })
+    setAiAnalysis(null)
+    setGeneratedWorkflowData(null)
+    setAutomationState({ status: 'idle', activeWorkflow: null, actionsState: [], logs: [], message: '' })
+  }
+
+  const handleDeleteHistoryRecord = (histId) => {
+    setHistoryRecords(prev => prev.filter(r => r.id !== histId))
   }
 
   // ─── Automation Engine (FIX 2: onInterrupted preserved exactly)
-  const handleExecuteWorkflow = () => {
-    if (!generatedWorkflowData || generatedWorkflowData.status !== 'Approved') return
+  const handleExecuteWorkflow = (targetWorkflowId) => {
+    const idToRun = targetWorkflowId || activeSessionId
+    const targetSession = workflowSessions.find(s => s.id === idToRun)
+    const targetWf = targetSession?.generatedWorkflowData || generatedWorkflowData
+
+    if (!targetWf || targetWf.status !== 'Approved') return
+    if (targetWf.status === 'Completed' || targetWf.isCompleted) return
     if (engineHandleRef.current) engineHandleRef.current.stop()
 
-    const initialActions = generatedWorkflowData.actions.map(act => ({ ...act, status: 'pending' }))
-    setAutomationState({
-      status: 'running', activeWorkflow: generatedWorkflowData,
-      actionsState: initialActions, logs: [], message: ''
-    })
+    const initialActions = targetWf.actions.map(act => ({ ...act, status: 'pending' }))
+    const runningState = {
+      status: 'running',
+      activeWorkflow: targetWf,
+      actionsState: initialActions,
+      logs: [],
+      message: ''
+    }
 
-    const handle = executeWorkflow(generatedWorkflowData, {
+    setAutomationState(runningState)
+    if (idToRun) {
+      setWorkflowSessions(prev => prev.map(s => {
+        if (s.id === idToRun) {
+          return { ...s, automationState: runningState }
+        }
+        return s
+      }))
+    }
+
+    const handle = executeWorkflow(targetWf, {
       onActionUpdate: ({ actionsState }) => {
         setAutomationState(prev => ({ ...prev, actionsState }))
+        if (idToRun) {
+          setWorkflowSessions(prev => prev.map(s => {
+            if (s.id === idToRun) {
+              return {
+                ...s,
+                automationState: {
+                  ...(s.automationState || {}),
+                  actionsState
+                }
+              }
+            }
+            return s
+          }))
+        }
       },
       onLog: (logEntry) => {
         setAutomationState(prev => ({ ...prev, logs: [...prev.logs, logEntry] }))
+        if (idToRun) {
+          setWorkflowSessions(prev => prev.map(s => {
+            if (s.id === idToRun) {
+              return {
+                ...s,
+                automationState: {
+                  ...(s.automationState || {}),
+                  logs: [...(s.automationState?.logs || []), logEntry]
+                }
+              }
+            }
+            return s
+          }))
+        }
       },
       onComplete: ({ totalActions, completedActions }) => {
+        const completedMsg = `Workflow Completed: ${completedActions} / ${totalActions} actions completed`
         setAutomationState(prev => ({
           ...prev, status: 'completed',
-          message: `Workflow Completed: ${completedActions} / ${totalActions} actions completed`
+          message: completedMsg
         }))
+        setGeneratedWorkflowData(prev => prev ? ({ ...prev, status: 'Completed', isCompleted: true }) : null)
+        setDiscoveryState(prev => ({ ...prev, status: 'completed' }))
+        // Push persistent history record
+        const sessionSnap = workflowSessionsRef.current.find(s => s.id === idToRun)
+        setHistoryRecords(prev => [...prev, {
+          id: 'hist-' + Date.now(),
+          workflowId: idToRun || 'unknown',
+          workflowName: sessionSnap?.name || targetWf.name || 'Workflow',
+          date: new Date().toLocaleDateString('en-GB'),
+          actions: totalActions,
+          completed: completedActions,
+          status: 'Completed',
+        }])
+        if (idToRun) {
+          setWorkflowSessions(prev => prev.map(s => {
+            if (s.id === idToRun) {
+              return {
+                ...s,
+                generatedWorkflowData: s.generatedWorkflowData ? { ...s.generatedWorkflowData, status: 'Completed', isCompleted: true } : null,
+                discoveryState: { ...s.discoveryState, status: 'completed' },
+                automationState: {
+                  ...(s.automationState || {}),
+                  status: 'completed',
+                  message: completedMsg
+                }
+              }
+            }
+            return s
+          }))
+        }
       },
-      // FIX 2: onInterrupted (not onStop) — exact original wiring
       onInterrupted: ({ actionsState }) => {
+        const interruptedMsg = 'Workflow execution was interrupted by the user.'
         setAutomationState(prev => ({
           ...prev, status: 'interrupted', actionsState,
-          message: 'Workflow execution was interrupted by the user.'
+          message: interruptedMsg
         }))
+        // Push persistent history record
+        const sessionSnap2 = workflowSessionsRef.current.find(s => s.id === idToRun)
+        const completedCount = actionsState.filter(a => a.status === 'completed').length
+        setHistoryRecords(prev => [...prev, {
+          id: 'hist-' + Date.now(),
+          workflowId: idToRun || 'unknown',
+          workflowName: sessionSnap2?.name || targetWf.name || 'Workflow',
+          date: new Date().toLocaleDateString('en-GB'),
+          actions: actionsState.length,
+          completed: completedCount,
+          status: 'Interrupted',
+        }])
+        if (idToRun) {
+          setWorkflowSessions(prev => prev.map(s => {
+            if (s.id === idToRun) {
+              return {
+                ...s,
+                automationState: {
+                  ...(s.automationState || {}),
+                  status: 'interrupted',
+                  actionsState,
+                  message: interruptedMsg
+                }
+              }
+            }
+            return s
+          }))
+        }
       },
       onError: (errMsg) => {
         setAutomationState(prev => ({ ...prev, status: 'error', message: errMsg }))
+        if (idToRun) {
+          setWorkflowSessions(prev => prev.map(s => {
+            if (s.id === idToRun) {
+              return {
+                ...s,
+                automationState: {
+                  ...(s.automationState || {}),
+                  status: 'error',
+                  message: errMsg
+                }
+              }
+            }
+            return s
+          }))
+        }
       }
     })
     engineHandleRef.current = handle
@@ -304,17 +684,27 @@ function App() {
             detectedResult={detectedResult}
             automationState={automationState}
             isRecording={isRecording}
+            workflowSessions={workflowSessions}
+            activeSessionId={activeSessionId}
             onNavigate={setActivePage}
+            onDeleteWorkflow={handleDeleteWorkflow}
+            customerName={customerName}
+            setCustomerName={setCustomerName}
+            customerRequest={customerRequest}
+            setCustomerRequest={setCustomerRequest}
+            attachmentName={attachmentName}
+            setAttachmentName={setAttachmentName}
+            simulatorError={simulatorError}
+            setSimulatorError={setSimulatorError}
+            onProcessCustomerRequest={handleProcessCustomerRequest}
+            onQuickFill={handleQuickFill}
           />
         )
       case 'activity':
         return (
           <ActivityMonitorPage
             activities={activities}
-            isRecording={isRecording}
-            onStartRecording={handleStartRecording}
-            onStopRecording={handleStopRecording}
-            onClear={handleClearActivities}
+            workflowSessions={workflowSessions}
           />
         )
       case 'simulator':
@@ -339,20 +729,23 @@ function App() {
             detectedResult={detectedResult}
             isAnalyzingAi={isAnalyzingAi}
             aiAnalysis={aiAnalysis}
+            workflowStatus={discoveryState.status}
             onUnderstandWithAI={handleUnderstandWithAI}
             onGenerateWorkflow={handleGenerateWorkflow}
-            onIgnore={() => {}}
+            onDeleteDiscovery={handleDeleteDiscovery}
           />
         )
       case 'workflows':
         return (
           <WorkflowsPage
+            workflowSessions={workflowSessions}
             generatedWorkflowData={generatedWorkflowData}
             automationState={automationState}
-            onApprove={handleApproveGeneratedWorkflow}
-            onReject={handleRejectGeneratedWorkflow}
+            onApprove={handleApproveWorkflow}
+            onReject={handleRejectWorkflow}
             onExecute={handleExecuteWorkflow}
             onStop={handleStopAutomation}
+            onDeleteWorkflow={handleDeleteWorkflow}
           />
         )
       case 'workmap':
@@ -365,8 +758,8 @@ function App() {
       case 'history':
         return (
           <HistoryPage
-            automationState={automationState}
-            generatedWorkflowData={generatedWorkflowData}
+            historyRecords={historyRecords}
+            onDeleteHistoryRecord={handleDeleteHistoryRecord}
           />
         )
       case 'integrations':
@@ -391,7 +784,20 @@ function App() {
             detectedResult={detectedResult}
             automationState={automationState}
             isRecording={isRecording}
+            workflowSessions={workflowSessions}
+            activeSessionId={activeSessionId}
             onNavigate={setActivePage}
+            onDeleteWorkflow={handleDeleteWorkflow}
+            customerName={customerName}
+            setCustomerName={setCustomerName}
+            customerRequest={customerRequest}
+            setCustomerRequest={setCustomerRequest}
+            attachmentName={attachmentName}
+            setAttachmentName={setAttachmentName}
+            simulatorError={simulatorError}
+            setSimulatorError={setSimulatorError}
+            onProcessCustomerRequest={handleProcessCustomerRequest}
+            onQuickFill={handleQuickFill}
           />
         )
     }
@@ -401,7 +807,13 @@ function App() {
     <div className="app-shell">
       <Sidebar
         activePage={activePage}
-        onNavigate={setActivePage}
+        onNavigate={(page) => {
+          if (isRecording && page !== activePage) {
+            setNavWarningTarget(page)
+          } else {
+            setActivePage(page)
+          }
+        }}
         isRecording={isRecording}
         onStartRecording={handleStartRecording}
         onStopRecording={handleStopRecording}
@@ -417,27 +829,79 @@ function App() {
         />
 
         <div className="app-content">
-          {/* Customer Request Simulator always accessible via sidebar — show as inline card on dashboard */}
-          {activePage === 'dashboard' && (
-            <div className="dashboard-sim-bar">
-              <SimulatorPage
-                isRecording={isRecording}
-                customerName={customerName}
-                setCustomerName={setCustomerName}
-                customerRequest={customerRequest}
-                setCustomerRequest={setCustomerRequest}
-                attachmentName={attachmentName}
-                setAttachmentName={setAttachmentName}
-                simulatorError={simulatorError}
-                setSimulatorError={setSimulatorError}
-                onProcess={handleProcessCustomerRequest}
-                onQuickFill={handleQuickFill}
-              />
-            </div>
-          )}
           {renderPage()}
         </div>
       </div>
+
+      {/* Name Workflow Modal for Recording Session */}
+      {isNameModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsNameModalOpen(false)}>
+          <div className="modal-card" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <span className="modal-title">What would you like to name this workflow?</span>
+            </div>
+            <form onSubmit={e => { e.preventDefault(); handleConfirmStartRecording(pendingWorkflowName) }}>
+              <div className="modal-body">
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ width: '100%' }}
+                  placeholder="e.g. Workflow 1"
+                  value={pendingWorkflowName}
+                  onChange={e => setPendingWorkflowName(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setIsNameModalOpen(false)}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Start Recording
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Recording Navigation Warning Modal */}
+      {navWarningTarget && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-header">
+              <span className="modal-title">Recording in Progress</span>
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
+                Recording is still active. Please stop the recording before leaving this page.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setNavWarningTarget(null)}
+              >
+                Stay Here
+              </button>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => {
+                  setActivePage(navWarningTarget)
+                  setNavWarningTarget(null)
+                }}
+              >
+                Leave Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

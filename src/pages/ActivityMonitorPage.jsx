@@ -1,5 +1,5 @@
-import { Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { ChevronDown } from 'lucide-react'
 
 const APP_COLORS = {
   'WorkFlowOS': 'var(--accent)',
@@ -10,36 +10,47 @@ const APP_COLORS = {
   'Web Browser': 'var(--text-secondary)',
 }
 
-export default function ActivityMonitorPage({ activities, isRecording, onStartRecording, onStopRecording, onClear }) {
-  const [search, setSearch] = useState('')
+export default function ActivityMonitorPage({
+  activities = [],
+  workflowSessions = [],
+}) {
   const [filter, setFilter] = useState('all') // all | business | raw_ui
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState('')
 
-  const filtered = activities.filter(act => {
-    const matchFilter =
+  const selectedSession = workflowSessions.find(w => w.id === selectedWorkflowId)
+
+  // Filter activities by selected workflow first
+  const baseActivities = selectedWorkflowId
+    ? activities.filter(act => act.workflowId === selectedWorkflowId)
+    : activities
+
+  const filtered = baseActivities.filter(act => {
+    return (
       filter === 'all' ||
       (filter === 'business' && act.category === 'business') ||
       (filter === 'raw_ui'   && act.category === 'raw_ui')
-    const matchSearch =
-      !search ||
-      act.app?.toLowerCase().includes(search.toLowerCase()) ||
-      act.action?.toLowerCase().includes(search.toLowerCase()) ||
-      act.actionType?.toLowerCase().includes(search.toLowerCase())
-    return matchFilter && matchSearch
+    )
   })
 
   return (
     <div className="page-content">
       {/* Toolbar */}
       <div className="monitor-toolbar">
-        <div className="search-box">
-          <Search size={13} />
-          <input
-            type="text"
-            placeholder="Search activities…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="search-input"
-          />
+        {/* Full-width workflow dropdown */}
+        <div className="wf-dropdown-wrap">
+          <select
+            className="wf-dropdown-select"
+            value={selectedWorkflowId}
+            onChange={e => setSelectedWorkflowId(e.target.value)}
+          >
+            <option value="">All Workflows</option>
+            {workflowSessions.map(wf => (
+              <option key={wf.id} value={wf.id}>
+                {wf.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown size={14} className="wf-dropdown-chevron" />
         </div>
 
         <div className="filter-tabs">
@@ -53,31 +64,21 @@ export default function ActivityMonitorPage({ activities, isRecording, onStartRe
             </button>
           ))}
         </div>
-
-        <div className="monitor-toolbar-right">
-          {!isRecording ? (
-            <button className="mon-btn mon-btn-start" onClick={onStartRecording}>
-              <span className="rec-dot-sm" style={{ background: '#fff' }} />
-              Start Recording
-            </button>
-          ) : (
-            <button className="mon-btn mon-btn-stop" onClick={onStopRecording}>
-              Stop Recording
-            </button>
-          )}
-          <button className="icon-btn" onClick={onClear} title="Clear feed">
-            <Trash2 size={14} />
-          </button>
-        </div>
       </div>
 
       {/* Activity Feed Table */}
       <div className="panel">
+        {selectedSession && (
+          <div className="panel-header">
+            <span className="panel-title">{selectedSession.name}</span>
+            <span className="badge badge-dim badge-sm">{filtered.length} events</span>
+          </div>
+        )}
         <div className="table-wrap">
           {filtered.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px 24px' }}>
-              <p>{activities.length === 0
-                ? 'No activities recorded yet. Start recording and submit a customer request.'
+              <p>{baseActivities.length === 0
+                ? 'No activities recorded for this workflow.'
                 : 'No activities match the current filter.'}</p>
             </div>
           ) : (
