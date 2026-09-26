@@ -8,11 +8,78 @@
   display: flex;
   height: 100svh;
   overflow: hidden;
+  position: relative;
   background:
-    radial-gradient(ellipse 80% 50% at 15% 10%, rgba(79, 126, 255, 0.055) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 45% at 88% 85%, rgba(139, 92, 246, 0.045) 0%, transparent 60%),
-    radial-gradient(ellipse 100% 60% at 50% 0%, rgba(79, 126, 255, 0.03) 0%, transparent 50%),
-    #0e1015;
+    radial-gradient(ellipse 85% 65% at 0%   0%,   rgba(30,  64, 175, 0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 55% at 100% 100%, rgba(109, 40, 217, 0.24) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 48% at 82%   5%,  rgba(79, 126, 255, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse 75% 58% at 12%  95%,  rgba(30,  64, 175, 0.14) 0%, transparent 50%),
+    #080c14;
+}
+
+/* Animated atmospheric blob — drifting blue glow, top-left */
+.app-shell::before {
+  content: '';
+  position: absolute;
+  width: 900px;
+  height: 780px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(59, 130, 246, 0.18) 0%,
+    rgba(30,  64, 175, 0.09) 45%,
+    transparent 70%
+  );
+  top: -280px;
+  left: -180px;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(55px);
+  will-change: transform;
+  animation: app-drift-a 30s ease-in-out infinite alternate;
+}
+
+/* Animated atmospheric blob — drifting violet glow, bottom-right */
+.app-shell::after {
+  content: '';
+  position: absolute;
+  width: 780px;
+  height: 720px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(139, 92, 246, 0.17) 0%,
+    rgba(109, 40, 217, 0.08) 45%,
+    transparent 70%
+  );
+  bottom: -230px;
+  right: -160px;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(65px);
+  will-change: transform;
+  animation: app-drift-b 36s ease-in-out infinite alternate;
+}
+
+/* Sidebar and main content sit above background atmosphere */
+.sidebar,
+.app-main { position: relative; z-index: 1; }
+
+@keyframes app-drift-a {
+  0%   { transform: translate(  0px,   0px) scale(1.00); }
+  30%  { transform: translate( 85px,  55px) scale(1.12); }
+  65%  { transform: translate(-48px,  88px) scale(0.93); }
+  100% { transform: translate( 58px, -68px) scale(1.08); }
+}
+
+@keyframes app-drift-b {
+  0%   { transform: translate(  0px,   0px) scale(1.00); }
+  35%  { transform: translate(-78px, -48px) scale(1.10); }
+  70%  { transform: translate( 58px, -78px) scale(0.91); }
+  100% { transform: translate(-38px,  58px) scale(1.07); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-shell::before,
+  .app-shell::after { animation: none; }
 }
 
 .app-main {
@@ -552,6 +619,8 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
+  position: relative;
+  overflow: hidden;
 }
 
 .login-box {
@@ -1613,42 +1682,126 @@
 /* ── Minimal Visual Polish ────────────────────────────────── */
 
 
-/* Login page: rich atmospheric background with mouse-follow glow */
+/* Login page — deep atmospheric background with mouse-follow glow layer */
 .login-page {
   background:
-    /* Mouse-follow ambient glow — driven by --mouse-x / --mouse-y via JS */
+    /* Mouse-follow ambient glow — updated by JS via --mouse-x/--mouse-y CSS vars */
     radial-gradient(
-      circle 600px at var(--mouse-x, 50%) var(--mouse-y, 42%),
-      rgba(79, 126, 255, 0.07) 0%,
-      transparent 70%
+      circle 650px at var(--mouse-x, 50%) var(--mouse-y, 44%),
+      rgba(79, 126, 255, 0.10) 0%,
+      transparent 65%
     ),
-    /* Static atmospheric layers */
-    radial-gradient(ellipse 90% 55% at 20% 15%, rgba(79, 126, 255, 0.08) 0%, transparent 65%),
-    radial-gradient(ellipse 70% 50% at 82% 88%, rgba(139, 92, 246, 0.07) 0%, transparent 65%),
-    radial-gradient(ellipse 50% 35% at 60% 5%,  rgba(79, 126, 255, 0.04) 0%, transparent 55%),
-    #0c0f14;
-  transition: background 0.05s linear;
+    radial-gradient(ellipse 88% 60% at 8%   8%,   rgba(30,  64, 175, 0.35) 0%, transparent 58%),
+    radial-gradient(ellipse 72% 58% at 92%  92%,  rgba(109, 40, 217, 0.30) 0%, transparent 58%),
+    radial-gradient(ellipse 55% 42% at 75%   6%,  rgba(79, 126, 255, 0.22) 0%, transparent 52%),
+    radial-gradient(ellipse 65% 50% at 18%  85%,  rgba(30,  64, 175, 0.18) 0%, transparent 52%),
+    #07090f;
 }
 
-/* Disable mouse-follow transition under reduced-motion to respect preference */
-@media (prefers-reduced-motion: reduce) {
-  .login-page {
-    background:
-      radial-gradient(ellipse 90% 55% at 20% 15%, rgba(79, 126, 255, 0.08) 0%, transparent 65%),
-      radial-gradient(ellipse 70% 50% at 82% 88%, rgba(139, 92, 246, 0.07) 0%, transparent 65%),
-      #0c0f14;
-    transition: none;
-  }
-}
-
-/* Login box: slightly stronger border and shadow */
+/* Login box — elevated above decorative layers */
 .login-box {
-  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  position: relative;
+  z-index: 10;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(79,126,255,0.08);
   border-color: var(--border-light);
 }
 
 /* Login primary button: active state */
 .login-btn-primary:active { opacity: 0.88; }
+
+/* ── Login Decorative Parallax Layers ─────────────────────── */
+
+/* Base layer container — position: absolute children anchor here */
+.lp-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: transform;
+  z-index: 0;
+}
+
+/* Atmospheric blob base style */
+.lp-blob {
+  position: absolute;
+  border-radius: 50%;
+}
+
+/* Blue atmospheric blob — top-left corner */
+.lp-blob-1 {
+  width: 680px;
+  height: 640px;
+  background: radial-gradient(circle,
+    rgba(30,  64, 175, 0.46) 0%,
+    rgba(30,  64, 175, 0.16) 48%,
+    transparent 70%
+  );
+  filter: blur(80px);
+  top:  -170px;
+  left: -170px;
+  animation: lp-drift-1 22s ease-in-out infinite alternate;
+}
+
+/* Violet atmospheric blob — bottom-right corner */
+.lp-blob-2 {
+  width: 600px;
+  height: 560px;
+  background: radial-gradient(circle,
+    rgba(109, 40, 217, 0.42) 0%,
+    rgba(109, 40, 217, 0.14) 48%,
+    transparent 70%
+  );
+  filter: blur(90px);
+  bottom: -150px;
+  right:  -150px;
+  animation: lp-drift-2 28s ease-in-out infinite alternate;
+}
+
+/* Mid blue-indigo blob — right-center */
+.lp-blob-3 {
+  width: 440px;
+  height: 420px;
+  background: radial-gradient(circle,
+    rgba(79, 126, 255, 0.28) 0%,
+    rgba(79, 126, 255, 0.08) 48%,
+    transparent 70%
+  );
+  filter: blur(65px);
+  top:   32%;
+  right:  6%;
+  animation: lp-drift-3 18s ease-in-out infinite alternate;
+}
+
+/* SVG decorative workflow nodes/lines */
+.lp-nodes-svg {
+  width: 100%;
+  height: 100%;
+  opacity: 0.70;
+}
+
+/* Ambient drift keyframes for login blobs */
+@keyframes lp-drift-1 {
+  0%   { transform: translate(  0px,   0px); }
+  45%  { transform: translate( 42px,  30px); }
+  100% { transform: translate(-22px,  48px); }
+}
+
+@keyframes lp-drift-2 {
+  0%   { transform: translate(  0px,   0px); }
+  40%  { transform: translate(-38px, -24px); }
+  100% { transform: translate( 20px,  40px); }
+}
+
+@keyframes lp-drift-3 {
+  0%   { transform: translate(  0px,   0px); }
+  55%  { transform: translate(-30px,  20px); }
+  100% { transform: translate( 26px, -32px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-blob-1,
+  .lp-blob-2,
+  .lp-blob-3 { animation: none; }
+}
 
 /* Panel: subtle hover lift for interactive panels */
 .panel { transition: border-color 0.15s; }
