@@ -1,0 +1,123 @@
+/* ============================================================
+   WorkFlowOS — Global Design System
+   Dark professional SaaS theme
+   ============================================================ */
+
+:root {
+  /* Backgrounds */
+  --bg-base:    #0e1015;
+  --bg-surface: #161920;
+  --bg-raised:  #1d2029;
+  --bg-hover:   #222530;
+
+  /* Borders */
+  --border:       #2a2d3a;
+  --border-light: #323545;
+
+  /* Text */
+  --text-primary:   #e4e6f0;
+  --text-secondary: #7b8099;
+  --text-muted:     #4e5468;
+
+  /* Accent — blue/indigo */
+  --accent:        #4f7eff;
+  --accent-hover:  #3a6aee;
+  --accent-dim:    rgba(79, 126, 255, 0.12);
+  --accent-border: rgba(79, 126, 255, 0.28);
+
+  /* Semantic colours */
+  --green:        #22c55e;
+  --green-dim:    rgba(34, 197, 94, 0.12);
+  --green-border: rgba(34, 197, 94, 0.28);
+
+  --red:        #ef4444;
+  --red-dim:    rgba(239, 68, 68, 0.12);
+  --red-border: rgba(239, 68, 68, 0.30);
+
+  --amber:        #f59e0b;
+  --amber-dim:    rgba(245, 158, 11, 0.12);
+  --amber-border: rgba(245, 158, 11, 0.28);
+
+  --purple:        #8b5cf6;
+  --purple-dim:    rgba(139, 92, 246, 0.12);
+  --purple-border: rgba(139, 92, 246, 0.28);
+
+  /* Typography */
+  --sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+
+  /* Layout */
+  --sidebar-w: 220px;
+  --header-h:  52px;
+
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  text-align: left;
+  border: none;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Reset headings */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--sans);
+}
+
+p { margin: 0; }
+
+a { color: var(--accent); text-decoration: none; }
+
+button {
+  font-family: var(--sans);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input, select, textarea {
+  font-family: var(--sans);
+  font-size: 14px;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg-raised);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-light); }
