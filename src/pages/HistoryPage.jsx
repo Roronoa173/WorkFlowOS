@@ -34,9 +34,9 @@ export default function HistoryPage({
   }
 
   const statusBadgeClass = (status) => {
-    if (status === 'Completed')  return 'badge badge-green badge-sm'
+    if (status === 'Completed' || status === 'Approved') return 'badge badge-green badge-sm'
     if (status === 'Interrupted') return 'badge badge-red badge-sm'
-    if (status === 'Rejected')   return 'badge badge-amber badge-sm'
+    if (status === 'Rejected')   return 'badge badge-red badge-sm'
     return 'badge badge-dim badge-sm'
   }
 
@@ -63,7 +63,7 @@ export default function HistoryPage({
         {filtered.length === 0 ? (
           <div className="empty-state" style={{ padding: '60px 24px' }}>
             <p>No execution history yet.</p>
-            <small>Run, interrupt, or reject a workflow to see history here.</small>
+            <small>Deleted workflows will appear here in the recycle bin.</small>
           </div>
         ) : (
           <div className="table-wrap">
@@ -113,13 +113,11 @@ export default function HistoryPage({
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <span className="modal-title">Permanently Delete History?</span>
+              <span className="modal-title">Delete Workflow History</span>
             </div>
             <div className="modal-body">
               <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
-                Are you sure you want to permanently delete the history record for{' '}
-                <strong style={{ color: 'var(--text-primary)' }}>{confirmDelete.workflowName}</strong>?
-                This action cannot be undone.
+                Are you sure you want to permanently delete {confirmDelete.workflowName}?
               </p>
             </div>
             <div className="modal-actions">
@@ -133,7 +131,7 @@ export default function HistoryPage({
                 className="btn btn-danger btn-sm"
                 onClick={handleConfirmYes}
               >
-                Yes, Delete
+                Yes
               </button>
             </div>
           </div>

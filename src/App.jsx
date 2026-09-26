@@ -184,6 +184,7 @@ function App() {
     setGeneratedWorkflowData(null)
     setSimulatorError('')
     setAutomationState({ status: 'idle', activeWorkflow: null, actionsState: [], logs: [], message: '' })
+    setHistoryRecords([])
     if (engineHandleRef.current) engineHandleRef.current.stop()
   }
 
@@ -361,6 +362,53 @@ function App() {
 
 
   const handleDeleteWorkflow = (workflowId) => {
+    // 1. Capture snapshot of the session/workflow being deleted to store in History (Recycle Bin)
+    const sessionToDelete = workflowSessionsRef.current?.find(s => s.id === workflowId) 
+      || workflowSessions.find(s => s.id === workflowId)
+
+    const targetWf = sessionToDelete?.generatedWorkflowData 
+      || (generatedWorkflowData?.id === workflowId || generatedWorkflowData?.workflowId === workflowId ? generatedWorkflowData : null)
+    
+    const targetAutoState = sessionToDelete?.automationState 
+      || (automationState?.activeWorkflow?.id === workflowId ? automationState : null)
+
+    const workflowName = sessionToDelete?.name || targetWf?.name || 'Workflow'
+
+    // Determine total and completed actions
+    const totalActions = targetWf?.actions?.length 
+      || targetAutoState?.actionsState?.length 
+      || 5
+
+    const completedActions = targetAutoState?.actionsState?.filter(a => a.status === 'completed').length 
+      || (targetWf?.status === 'Completed' || targetAutoState?.status === 'completed' ? totalActions : 0)
+
+    // Determine final status
+    let finalStatus = 'Draft'
+    if (targetWf?.status === 'Completed' || targetAutoState?.status === 'completed') {
+      finalStatus = 'Completed'
+    } else if (targetAutoState?.status === 'interrupted') {
+      finalStatus = 'Interrupted'
+    } else if (targetWf?.status === 'Rejected' || sessionToDelete?.discoveryState?.status === 'rejected') {
+      finalStatus = 'Rejected'
+    } else if (targetWf?.status === 'Approved') {
+      finalStatus = 'Approved'
+    } else if (targetWf?.status) {
+      finalStatus = targetWf.status
+    }
+
+    // Push into historyRecords (Recycle Bin)
+    const newHistoryRecord = {
+      id: 'hist-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      workflowId: workflowId,
+      workflowName: workflowName,
+      date: new Date().toLocaleDateString('en-GB'),
+      actions: totalActions,
+      completed: completedActions,
+      status: finalStatus,
+    }
+
+    setHistoryRecords(prev => [...prev, newHistoryRecord])
+
     setWorkflowSessions(prev => prev.filter(s => s.id !== workflowId))
     setActivities(prev => prev.filter(a => a.workflowId !== workflowId))
     if (activeSessionId === workflowId) {
@@ -467,8 +515,6 @@ function App() {
     if (engineHandleRef.current && automationState.activeWorkflow?.id === idToUpdate) {
       engineHandleRef.current.stop()
     }
-    // Find session name before updating
-    const rejectedSession = workflowSessionsRef.current.find(s => s.id === idToUpdate)
     setWorkflowSessions(prev => prev.map(s => {
       if (s.id === idToUpdate) {
         const currentWf = s.generatedWorkflowData || generateWorkflow({ intent: s.name })
@@ -484,16 +530,6 @@ function App() {
       setGeneratedWorkflowData(prev => prev ? ({ ...prev, status: 'Rejected' }) : null)
       setDiscoveryState(prev => ({ ...prev, status: 'rejected' }))
     }
-    // Push persistent history record for rejection
-    setHistoryRecords(prev => [...prev, {
-      id: 'hist-' + Date.now(),
-      workflowId: idToUpdate || 'unknown',
-      workflowName: rejectedSession?.name || 'Workflow',
-      date: new Date().toLocaleDateString('en-GB'),
-      actions: rejectedSession?.generatedWorkflowData?.actions?.length ?? 0,
-      completed: 0,
-      status: 'Rejected',
-    }])
   }
 
   const handleDeleteDiscovery = () => {
@@ -579,17 +615,6 @@ function App() {
         }))
         setGeneratedWorkflowData(prev => prev ? ({ ...prev, status: 'Completed', isCompleted: true }) : null)
         setDiscoveryState(prev => ({ ...prev, status: 'completed' }))
-        // Push persistent history record
-        const sessionSnap = workflowSessionsRef.current.find(s => s.id === idToRun)
-        setHistoryRecords(prev => [...prev, {
-          id: 'hist-' + Date.now(),
-          workflowId: idToRun || 'unknown',
-          workflowName: sessionSnap?.name || targetWf.name || 'Workflow',
-          date: new Date().toLocaleDateString('en-GB'),
-          actions: totalActions,
-          completed: completedActions,
-          status: 'Completed',
-        }])
         if (idToRun) {
           setWorkflowSessions(prev => prev.map(s => {
             if (s.id === idToRun) {
@@ -614,18 +639,6 @@ function App() {
           ...prev, status: 'interrupted', actionsState,
           message: interruptedMsg
         }))
-        // Push persistent history record
-        const sessionSnap2 = workflowSessionsRef.current.find(s => s.id === idToRun)
-        const completedCount = actionsState.filter(a => a.status === 'completed').length
-        setHistoryRecords(prev => [...prev, {
-          id: 'hist-' + Date.now(),
-          workflowId: idToRun || 'unknown',
-          workflowName: sessionSnap2?.name || targetWf.name || 'Workflow',
-          date: new Date().toLocaleDateString('en-GB'),
-          actions: actionsState.length,
-          completed: completedCount,
-          status: 'Interrupted',
-        }])
         if (idToRun) {
           setWorkflowSessions(prev => prev.map(s => {
             if (s.id === idToRun) {
