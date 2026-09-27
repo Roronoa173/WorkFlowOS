@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { useTranslation } from '../LanguageContext'
 
 const DEFAULT_ACTIONS = [
   { id: 'act-1', step: 1, title: 'Read customer email', service: 'Gmail', parameter: 'customerRequest' },
@@ -25,6 +26,7 @@ export default function WorkflowsPage({
   onStop,
   onDeleteWorkflow,
 }) {
+  const { t } = useTranslation()
   const [workflowToDelete, setWorkflowToDelete] = useState(null)
 
   const sessionsToRender = workflowSessions.length > 0
@@ -42,8 +44,8 @@ export default function WorkflowsPage({
       <div className="page-content">
         <div className="panel">
           <div className="empty-state" style={{ padding: '60px 24px' }}>
-            <p>No workflows generated yet.</p>
-            <small>Press Start in Monitoring to name and begin a workflow session, or go to Discoveries.</small>
+            <p>{t('workflows.noWorkflows', 'No workflows generated yet.')}</p>
+            <small>{t('workflows.noWorkflowsSub', 'Press Start in Monitoring to name and begin a workflow session, or go to Discoveries.')}</small>
           </div>
         </div>
       </div>
@@ -70,6 +72,14 @@ export default function WorkflowsPage({
         const sessionActivities = session.activities || []
         const customerRequests = sessionActivities.filter(a => a.data?.type === 'customer_request' || a.actionType === 'Customer Request Submitted')
 
+        const statusLabel = isCompleted
+          ? t('workflows.completed', 'Completed')
+          : (wf.status === 'Approved'
+            ? t('workflows.approved', 'Approved')
+            : wf.status === 'Rejected'
+              ? t('workflows.rejected', 'Rejected')
+              : t('workflows.draft', 'Draft'))
+
         return (
           <div key={session.id} className="workflow-session-container" style={{ marginBottom: 32 }}>
             {/* Workflow header row */}
@@ -80,33 +90,33 @@ export default function WorkflowsPage({
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <span className={`badge badge-${(wf.status === 'Completed' || isCompleted) ? 'green' : wf.status === 'Approved' ? 'green' : wf.status === 'Rejected' ? 'red' : 'amber'}`}>
-                    {isCompleted ? 'Completed' : wf.status}
+                    {statusLabel}
                   </span>
                   {wf.status === 'Draft' && (
                     <>
                       <button className="btn btn-danger btn-sm" onClick={() => onReject && onReject(session.id)}>
-                        Reject
+                        {t('workflows.rejectBtn', 'Reject')}
                       </button>
                       <button className="btn btn-primary btn-sm" onClick={() => onApprove && onApprove(session.id)}>
-                        Approve
+                        {t('workflows.approveBtn', 'Approve')}
                       </button>
                     </>
                   )}
                   {wf.status === 'Approved' && !isCompleted && !isRunning && (
                     <button className="btn btn-primary btn-sm" onClick={() => onExecute && onExecute(session.id)}>
-                      Run Workflow
+                      {t('workflows.runWorkflowBtn', 'Run Workflow')}
                     </button>
                   )}
                   {wf.status === 'Approved' && !isCompleted && isRunning && (
                     <button className="btn btn-danger btn-sm" onClick={() => onStop && onStop(session.id)}>
-                      Stop
+                      {t('workflows.stopBtn', 'Stop')}
                     </button>
                   )}
                   <button
                     type="button"
                     className="icon-btn"
                     style={{ color: 'var(--red)', marginLeft: 4 }}
-                    title="Delete workflow"
+                    title={t('common.delete', 'Delete workflow')}
                     onClick={() => setWorkflowToDelete(session)}
                   >
                     <Trash2 size={16} />
@@ -118,13 +128,13 @@ export default function WorkflowsPage({
               <div style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    Customer Requests ({customerRequests.length})
+                    {t('workflows.customerRequests', 'Customer Requests')} ({customerRequests.length})
                   </span>
-                  <span className="badge badge-dim badge-sm">{sessionActivities.length} total events</span>
+                  <span className="badge badge-dim badge-sm">{sessionActivities.length} {t('workflows.totalEvents', 'total events')}</span>
                 </div>
                 {customerRequests.length === 0 ? (
                   <p className="dim-text" style={{ fontSize: 12, margin: '8px 0' }}>
-                    No customer requests submitted during this workflow session.
+                    {t('workflows.noRequests', 'No customer requests submitted during this workflow session.')}
                   </p>
                 ) : (
                   <div className="table-wrap">
@@ -132,10 +142,10 @@ export default function WorkflowsPage({
                       <thead>
                         <tr>
                           <th>#</th>
-                          <th>Customer</th>
-                          <th>Request</th>
-                          <th>Attachment</th>
-                          <th>Time</th>
+                          <th>{t('common.customer', 'Customer')}</th>
+                          <th>{t('common.request', 'Request')}</th>
+                          <th>{t('common.attachment', 'Attachment')}</th>
+                          <th>{t('common.time', 'Time')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -144,7 +154,7 @@ export default function WorkflowsPage({
                           return (
                             <tr key={req.id || idx}>
                               <td className="td-num">{idx + 1}</td>
-                              <td className="td-bold">{cData.customer || 'Customer'}</td>
+                              <td className="td-bold">{cData.customer || t('common.customer', 'Customer')}</td>
                               <td>{cData.request || req.action}</td>
                               <td><code>{cData.attachment || 'document.pdf'}</code></td>
                               <td className="td-time">{req.time}</td>
@@ -161,7 +171,7 @@ export default function WorkflowsPage({
               <div style={{ marginTop: 24, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
                 <div style={{ marginBottom: 12 }}>
                   <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
-                    Workflow Actions ({(wf.actions || DEFAULT_ACTIONS).length})
+                    {t('workflows.actions', 'Workflow Actions')} ({(wf.actions || DEFAULT_ACTIONS).length})
                   </span>
                 </div>
                 <div className="table-wrap">
@@ -169,10 +179,10 @@ export default function WorkflowsPage({
                     <thead>
                       <tr>
                         <th>#</th>
-                        <th>Action</th>
-                        <th>Service</th>
-                        <th>Parameter</th>
-                        <th>Status</th>
+                        <th>{t('workflows.actions', 'Action')}</th>
+                        <th>{t('workflows.service', 'Service')}</th>
+                        <th>{t('workflows.parameter', 'Parameter')}</th>
+                        <th>{t('common.status', 'Status')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -187,7 +197,7 @@ export default function WorkflowsPage({
                             <td><code>{act.parameter}</code></td>
                             <td>
                               <span className={`badge badge-sm badge-${status === 'completed' ? 'green' : status === 'running' ? 'blue' : status === 'interrupted' ? 'red' : 'dim'}`}>
-                                {status}
+                                {status === 'completed' ? t('common.completed', 'Completed') : status === 'running' ? t('common.running', 'Running') : status === 'interrupted' ? t('common.interrupted', 'Interrupted') : status}
                               </span>
                             </td>
                           </tr>
@@ -203,7 +213,7 @@ export default function WorkflowsPage({
             {currentAutoState.logs?.length > 0 && (
               <div className="panel" style={{ marginTop: 16 }}>
                 <div className="panel-header">
-                  <span className="panel-title">Execution Log ({session.name})</span>
+                  <span className="panel-title">{t('workflows.executionLog', 'Execution Log')} ({session.name})</span>
                   {currentAutoState.message && (
                     <span className={`badge badge-${currentAutoState.status === 'completed' ? 'green' : 'red'} badge-sm`}>
                       {currentAutoState.status}
@@ -224,7 +234,7 @@ export default function WorkflowsPage({
             {/* Variables — Placed below Execution Log */}
             <div className="panel" style={{ marginTop: 16 }}>
               <div className="panel-header">
-                <span className="panel-title">Variables ({session.name})</span>
+                <span className="panel-title">{t('workflows.variables', 'Variables')} ({session.name})</span>
               </div>
               <div className="vars-list">
                 {(wf.variables || DEFAULT_VARIABLES).map(v => (
@@ -245,11 +255,11 @@ export default function WorkflowsPage({
         <div className="modal-overlay" onClick={() => setWorkflowToDelete(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <span className="modal-title">Delete Workflow</span>
+              <span className="modal-title">{t('workflows.deleteModalTitle', 'Delete Workflow')}</span>
             </div>
             <div className="modal-body">
               <p style={{ margin: 0, fontSize: 14, color: 'var(--text-primary)' }}>
-                Are you sure you want to delete {workflowToDelete.name}?
+                {t('workflows.deleteModalPrompt', { name: workflowToDelete.name }, `Are you sure you want to delete ${workflowToDelete.name}?`)}
               </p>
             </div>
             <div className="modal-actions">
@@ -258,7 +268,7 @@ export default function WorkflowsPage({
                 className="btn btn-ghost btn-sm"
                 onClick={() => setWorkflowToDelete(null)}
               >
-                No
+                {t('common.no', 'No')}
               </button>
               <button
                 type="button"
@@ -268,7 +278,7 @@ export default function WorkflowsPage({
                   setWorkflowToDelete(null)
                 }}
               >
-                Yes
+                {t('common.yes', 'Yes')}
               </button>
             </div>
           </div>

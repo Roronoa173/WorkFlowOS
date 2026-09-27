@@ -1,12 +1,16 @@
+import { useTranslation } from '../LanguageContext'
+
 const APPS = [
-  { id: 'browser', name: 'Browser',      desc: 'Monitor and replay browser sessions',  status: 'active',    color: '#8b5cf6' },
-  { id: 'email',   name: 'Email',        desc: 'Read incoming emails and attachments',  status: 'active',    color: '#ef4444' },
-  { id: 'files',   name: 'Files',        desc: 'Detect file downloads and uploads',     status: 'active',    color: '#f59e0b' },
-  { id: 'crm',     name: 'CRM',          desc: 'Customer record synchronization',       status: 'inactive',  color: '#4f7eff' },
-  { id: 'slack',   name: 'Messaging',    desc: 'Team notification dispatch',            status: 'active',    color: '#22c55e' },
+  { id: 'browser', name: 'Browser',   descKey: 'browserDesc', desc: 'Monitor and replay browser sessions', status: 'active',   color: '#8b5cf6' },
+  { id: 'email',   name: 'Email',     descKey: 'emailDesc',   desc: 'Read incoming emails and attachments', status: 'active',   color: '#ef4444' },
+  { id: 'files',   name: 'Files',     descKey: 'filesDesc',   desc: 'Detect file downloads and uploads',    status: 'active',   color: '#f59e0b' },
+  { id: 'crm',     name: 'CRM',       descKey: 'crmDesc',     desc: 'Customer record synchronization',      status: 'inactive', color: '#4f7eff' },
+  { id: 'slack',   name: 'Messaging', descKey: 'slackDesc',   desc: 'Team notification dispatch',           status: 'active',   color: '#22c55e' },
 ]
 
 export default function AppsPage() {
+  const { t } = useTranslation()
+
   return (
     <div className="page-content">
       <div className="apps-grid">
@@ -21,10 +25,10 @@ export default function AppsPage() {
               <div className="app-name-row">
                 <span className="app-name">{app.name}</span>
                 <span className={`badge badge-sm badge-${app.status === 'active' ? 'green' : 'dim'}`}>
-                  {app.status === 'active' ? 'Active' : 'Inactive'}
+                  {app.status === 'active' ? t('apps.active', 'Active') : t('apps.inactive', 'Inactive')}
                 </span>
               </div>
-              <span className="app-desc dim-text">{app.desc}</span>
+              <span className="app-desc dim-text">{t(`apps.${app.descKey}`, app.desc)}</span>
             </div>
           </div>
         ))}

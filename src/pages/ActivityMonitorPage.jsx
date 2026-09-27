@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { useTranslation } from '../LanguageContext'
 
 const APP_COLORS = {
   'WorkFlowOS': 'var(--accent)',
@@ -14,6 +15,7 @@ export default function ActivityMonitorPage({
   activities = [],
   workflowSessions = [],
 }) {
+  const { t } = useTranslation()
   const [filter, setFilter] = useState('all') // all | business | raw_ui
   const [selectedWorkflowId, setSelectedWorkflowId] = useState('')
 
@@ -43,7 +45,7 @@ export default function ActivityMonitorPage({
             value={selectedWorkflowId}
             onChange={e => setSelectedWorkflowId(e.target.value)}
           >
-            <option value="">All Workflows</option>
+            <option value="">{t('activity.allWorkflows', 'All Workflows')}</option>
             {workflowSessions.map(wf => (
               <option key={wf.id} value={wf.id}>
                 {wf.name}
@@ -60,7 +62,7 @@ export default function ActivityMonitorPage({
               className={`filter-tab ${filter === f ? 'filter-tab-active' : ''}`}
               onClick={() => setFilter(f)}
             >
-              {f === 'all' ? 'All' : f === 'business' ? 'Business' : 'UI Events'}
+              {f === 'all' ? t('activity.allTab', 'All') : f === 'business' ? t('activity.businessTab', 'Business') : t('activity.uiEventsTab', 'UI Events')}
             </button>
           ))}
         </div>
@@ -71,24 +73,24 @@ export default function ActivityMonitorPage({
         {selectedSession && (
           <div className="panel-header">
             <span className="panel-title">{selectedSession.name}</span>
-            <span className="badge badge-dim badge-sm">{filtered.length} events</span>
+            <span className="badge badge-dim badge-sm">{filtered.length} {t('common.events', 'events')}</span>
           </div>
         )}
         <div className="table-wrap">
           {filtered.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px 24px' }}>
               <p>{baseActivities.length === 0
-                ? 'No activities recorded for this workflow.'
-                : 'No activities match the current filter.'}</p>
+                ? t('activity.noWorkflowActivities', 'No activities for this workflow session.')
+                : t('activity.noActivities', 'No activities match the current filter.')}</p>
             </div>
           ) : (
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Time</th>
-                  <th>Source</th>
-                  <th>Action</th>
-                  <th>Type</th>
+                  <th>{t('activity.tableTime', 'Time')}</th>
+                  <th>{t('activity.tableApp', 'Source')}</th>
+                  <th>{t('activity.tableAction', 'Action')}</th>
+                  <th>{t('activity.tableCategory', 'Type')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -105,7 +107,7 @@ export default function ActivityMonitorPage({
                     <td className="td-action">{act.action}</td>
                     <td>
                       {act.category === 'business' ? (
-                        <span className="badge badge-blue badge-sm">{act.actionType || 'Business'}</span>
+                        <span className="badge badge-blue badge-sm">{act.actionType || t('activity.businessTab', 'Business')}</span>
                       ) : (
                         <span className="badge badge-dim badge-sm">UI</span>
                       )}

@@ -1,13 +1,16 @@
 import WorkflowDiagram from '../components/WorkflowDiagram'
+import { useTranslation } from '../LanguageContext'
 
 export default function WorkMapPage({ generatedWorkflowData, automationState }) {
+  const { t } = useTranslation()
+
   if (!generatedWorkflowData) {
     return (
       <div className="page-content">
         <div className="panel">
           <div className="empty-state" style={{ padding: '60px 24px' }}>
-            <p>No workflow to visualize yet.</p>
-            <small>Generate and approve a workflow first.</small>
+            <p>{t('workmap.noWorkflow', 'No workflow to visualize yet.')}</p>
+            <small>{t('workmap.noWorkflowSub', 'Generate and approve a workflow first.')}</small>
           </div>
         </div>
       </div>
@@ -35,7 +38,7 @@ export default function WorkMapPage({ generatedWorkflowData, automationState }) 
           <span className="panel-title">{wf.name}</span>
           {showBadge && (
             <span className={`badge badge-${wf.status === 'Approved' ? 'green' : wf.status === 'Rejected' ? 'red' : 'amber'}`}>
-              {wf.status}
+              {wf.status === 'Approved' ? t('workflows.approved', 'Approved') : wf.status === 'Rejected' ? t('workflows.rejected', 'Rejected') : wf.status}
             </span>
           )}
         </div>
@@ -58,13 +61,15 @@ export default function WorkMapPage({ generatedWorkflowData, automationState }) 
             return (
               <div key={act.id} className={`workmap-node-row node-row-${status}`}>
                 <div className={`node-status-circle node-circle-${status}`} />
-                <div className="node-row-body">
+                <div className="node-row-info">
+                  <span className="node-row-service">{act.service}</span>
                   <span className="node-row-title">{act.title}</span>
-                  <span className="node-row-service dim-text">{act.service}</span>
                 </div>
-                <span className={`badge badge-sm badge-${status === 'completed' ? 'green' : status === 'running' ? 'blue' : status === 'interrupted' ? 'red' : 'dim'}`}>
-                  {status}
-                </span>
+                <div className="node-row-meta">
+                  <span className={`badge badge-sm badge-${status === 'completed' ? 'green' : status === 'running' ? 'blue' : status === 'interrupted' ? 'red' : 'dim'}`}>
+                    {status === 'completed' ? t('common.completed', 'Completed') : status === 'running' ? t('common.running', 'Running') : status === 'interrupted' ? t('common.interrupted', 'Interrupted') : status}
+                  </span>
+                </div>
               </div>
             )
           })}

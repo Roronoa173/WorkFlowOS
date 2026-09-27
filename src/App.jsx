@@ -20,10 +20,13 @@ import AppsPage            from './pages/AppsPage'
 import SettingsPage        from './pages/SettingsPage'
 import ProfilePage         from './pages/ProfilePage'
 import SimulatorPage       from './pages/SimulatorPage'
+import { useTranslation }  from './LanguageContext'
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
 
 function App() {
+  const { t } = useTranslation()
+
   // ── Auth state
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser]             = useState(null)
@@ -851,7 +854,7 @@ function App() {
         <div className="modal-overlay" onClick={() => setIsNameModalOpen(false)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <span className="modal-title">What would you like to name this workflow?</span>
+              <span className="modal-title">{t('modals.nameWorkflowTitle', 'What would you like to name this workflow?')}</span>
             </div>
             <form onSubmit={e => { e.preventDefault(); handleConfirmStartRecording(pendingWorkflowName) }}>
               <div className="modal-body">
@@ -859,7 +862,7 @@ function App() {
                   type="text"
                   className="form-input"
                   style={{ width: '100%' }}
-                  placeholder="e.g. Workflow 1"
+                  placeholder={t('modals.nameWorkflowPlaceholder', 'e.g. Workflow 1')}
                   value={pendingWorkflowName}
                   onChange={e => setPendingWorkflowName(e.target.value)}
                   autoFocus
@@ -872,10 +875,10 @@ function App() {
                   className="btn btn-ghost btn-sm"
                   onClick={() => setIsNameModalOpen(false)}
                 >
-                  Cancel
+                  {t('common.cancel', 'Cancel')}
                 </button>
                 <button type="submit" className="btn btn-primary btn-sm">
-                  Start Recording
+                  {t('modals.startRecordingBtn', 'Start Recording')}
                 </button>
               </div>
             </form>
@@ -888,11 +891,11 @@ function App() {
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <span className="modal-title">Recording in Progress</span>
+              <span className="modal-title">{t('modals.navWarningTitle', 'Recording in Progress')}</span>
             </div>
             <div className="modal-body">
               <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
-                Recording is still active. Please stop the recording before leaving this page.
+                {t('modals.navWarningBody', 'Monitoring is currently recording live workflow events. Navigating away might interrupt your active session recording.')}
               </p>
             </div>
             <div className="modal-actions">
@@ -900,7 +903,7 @@ function App() {
                 className="btn btn-ghost btn-sm"
                 onClick={() => setNavWarningTarget(null)}
               >
-                Stay Here
+                {t('modals.stayHereBtn', 'Stay Here')}
               </button>
               <button
                 className="btn btn-danger btn-sm"
@@ -909,7 +912,7 @@ function App() {
                   setNavWarningTarget(null)
                 }}
               >
-                Leave Anyway
+                {t('modals.leaveAnywayBtn', 'Leave Anyway')}
               </button>
             </div>
           </div>

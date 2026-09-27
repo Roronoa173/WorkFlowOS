@@ -1,4 +1,5 @@
 import WorkflowDiagram from '../components/WorkflowDiagram'
+import { useTranslation } from '../LanguageContext'
 
 export default function DiscoveriesPage({
   detectedResult,
@@ -7,8 +8,9 @@ export default function DiscoveriesPage({
   workflowStatus, // 'pending' | 'approved' | 'rejected' | 'completed'
   onUnderstandWithAI,
   onGenerateWorkflow,
-  onDeleteDiscovery,
+  _onDeleteDiscovery,
 }) {
+  const { t } = useTranslation()
   const DEMO_STEPS = ['Gmail', 'Download', 'CRM', 'Slack']
 
   const isRejected = workflowStatus === 'rejected' || workflowStatus === 'Rejected'
@@ -18,8 +20,8 @@ export default function DiscoveriesPage({
       {!detectedResult.detected ? (
         <div className="panel">
           <div className="empty-state" style={{ padding: '60px 24px' }}>
-            <p>No workflow pattern detected yet.</p>
-            <small>Start recording and submit requests for 3+ customers (e.g. Rahul, Amit, Raj).</small>
+            <p>{t('discoveries.noPattern', 'No workflow pattern detected yet.')}</p>
+            <small>{t('discoveries.noPatternSub', 'Start recording and submit requests for 3+ customers (e.g. Rahul, Amit, Raj).')}</small>
           </div>
         </div>
       ) : (
@@ -29,12 +31,12 @@ export default function DiscoveriesPage({
             <div className="disc-card-header">
               <div>
                 <span className={`badge ${isRejected ? 'badge-red' : 'badge-blue'}`} style={{ marginBottom: 8, display: 'inline-block' }}>
-                  {isRejected ? 'Rejected' : 'Pattern Detected'}
+                  {isRejected ? t('discoveries.rejected', 'Rejected') : t('discoveries.patternDetected', 'Pattern Detected')}
                 </span>
                 <h3 className="disc-workflow-name">{detectedResult.workflowName}</h3>
               </div>
               <div className="disc-meta">
-                <span className="dim-text">{detectedResult.repetitions}× repeated</span>
+                <span className="dim-text">{detectedResult.repetitions}× {t('discoveries.repeated', 'repeated')}</span>
               </div>
             </div>
 
@@ -63,15 +65,15 @@ export default function DiscoveriesPage({
                     onClick={onUnderstandWithAI}
                     disabled={isAnalyzingAi}
                   >
-                    {isAnalyzingAi ? 'Analyzing…' : 'Understand with AI'}
+                    {isAnalyzingAi ? t('discoveries.analyzing', 'Analyzing…') : t('discoveries.understandWithAi', 'Understand with AI')}
                   </button>
                   <button
                     className="btn btn-secondary btn-sm"
                     onClick={onGenerateWorkflow}
                     disabled={!aiAnalysis}
-                    title={!aiAnalysis ? 'Run AI understanding first' : ''}
+                    title={!aiAnalysis ? t('discoveries.runAiFirst', 'Run AI understanding first') : ''}
                   >
-                    Generate Workflow
+                    {t('discoveries.generateWorkflow', 'Generate Workflow')}
                   </button>
                 </>
               )}
@@ -99,16 +101,22 @@ export default function DiscoveriesPage({
                   <span className="field-label-sm">Actions</span>
                   <ol className="ai-action-list">
                     {aiAnalysis.actions.map((act, i) => (
-                      <li key={i} className="ai-action-li">
-                        <span className="ai-action-num">{i + 1}</span>
-                        {act}
+                      <li key={i}>
+                        <span className="act-service">{act.service}</span>
+                        <span className="dim-text"> — {act.title}</span>
                       </li>
                     ))}
                   </ol>
                 </div>
                 <div className="ai-field">
-                  <span className="field-label-sm">Condition</span>
-                  <div className="condition-chip">{aiAnalysis.condition}</div>
+                  <span className="field-label-sm">Variables</span>
+                  <div className="vars-mini">
+                    {aiAnalysis.variables.map((v, i) => (
+                      <span key={i} className="var-chip">
+                        {v.name} <small>({v.type})</small>
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

@@ -13,18 +13,7 @@ import {
   Cpu,
   ChevronRight
 } from 'lucide-react'
-
-const NAV_ITEMS = [
-  { id: 'dashboard',       label: 'Dashboard',        Icon: LayoutDashboard },
-  { id: 'activity',        label: 'Activity Monitor', Icon: Activity },
-  { id: 'discoveries',     label: 'Discoveries',      Icon: Compass },
-  { id: 'workflows',       label: 'Workflows',        Icon: GitBranch },
-  { id: 'workmap',         label: 'Work Map',         Icon: Map },
-  { id: 'history',         label: 'History',          Icon: History },
-  { id: 'integrations',    label: 'Integrations',     Icon: Plug },
-  { id: 'apps',            label: 'Apps',             Icon: Grid },
-  { id: 'settings',        label: 'Settings',         Icon: Settings },
-]
+import { useTranslation } from '../LanguageContext'
 
 export default function Sidebar({
   activePage,
@@ -35,6 +24,28 @@ export default function Sidebar({
   onClearActivities,
   automationStatus,
 }) {
+  const { t } = useTranslation()
+
+  const navItems = [
+    { id: 'dashboard',       label: t('nav.dashboard', 'Dashboard'),              Icon: LayoutDashboard },
+    { id: 'activity',        label: t('nav.activity', 'Activity Monitor'),        Icon: Activity },
+    { id: 'discoveries',     label: t('nav.discoveries', 'Discoveries'),          Icon: Compass },
+    { id: 'workflows',       label: t('nav.workflows', 'Workflows'),              Icon: GitBranch },
+    { id: 'workmap',         label: t('nav.workmap', 'Work Map'),                 Icon: Map },
+    { id: 'history',         label: t('nav.history', 'History'),                  Icon: History },
+    { id: 'integrations',    label: t('nav.integrations', 'Integrations'),        Icon: Plug },
+    { id: 'apps',            label: t('nav.apps', 'Apps'),                        Icon: Grid },
+    { id: 'settings',        label: t('nav.settings', 'Settings'),                Icon: Settings },
+  ]
+
+  const engineStatusLabel = {
+    idle: t('common.idle', 'Idle'),
+    running: t('common.running', 'Running'),
+    completed: t('common.completed', 'Completed'),
+    interrupted: t('common.interrupted', 'Interrupted'),
+    error: t('common.error', 'Error'),
+  }
+
   return (
     <aside className="sidebar">
       {/* Logo */}
@@ -53,26 +64,26 @@ export default function Sidebar({
 
       {/* Monitoring Controls */}
       <div className="sidebar-section">
-        <span className="sidebar-section-label">Monitoring</span>
+        <span className="sidebar-section-label">{t('nav.monitoring', 'Monitoring')}</span>
         <div className="monitoring-controls">
           <div className="recording-status-row">
             <span className={`rec-dot ${isRecording ? 'rec-dot-active' : ''}`} />
-            <span className="rec-label">Online</span>
+            <span className="rec-label">{t('common.online', 'Online')}</span>
           </div>
           <div className="monitoring-btns">
             {!isRecording ? (
               <button className="mon-btn mon-btn-start" onClick={onStartRecording}>
                 <Circle size={8} fill="currentColor" />
-                Start
+                {t('common.start', 'Start')}
               </button>
             ) : (
               <button className="mon-btn mon-btn-stop" onClick={onStopRecording}>
                 <Square size={8} fill="currentColor" />
-                Stop
+                {t('common.stop', 'Stop')}
               </button>
             )}
-            <button className="mon-btn mon-btn-clear" onClick={onClearActivities} title="Clear all activities">
-              Clear
+            <button className="mon-btn mon-btn-clear" onClick={onClearActivities} title={t('common.clear', 'Clear all activities')}>
+              {t('common.clear', 'Clear')}
             </button>
           </div>
         </div>
@@ -80,7 +91,7 @@ export default function Sidebar({
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map(({ id, label, Icon }) => (
+        {navItems.map(({ id, label, Icon }) => (
           <button
             key={id}
             className={`nav-item ${activePage === id ? 'nav-item-active' : ''}`}
@@ -98,13 +109,9 @@ export default function Sidebar({
         <div className="engine-status-block">
           <Cpu size={13} />
           <div className="engine-status-text">
-            <span className="engine-status-label">App Engine</span>
+            <span className="engine-status-label">{t('nav.appEngine', 'App Engine')}</span>
             <span className={`engine-status-val status-${automationStatus}`}>
-              {automationStatus === 'idle' && 'Idle'}
-              {automationStatus === 'running' && 'Running'}
-              {automationStatus === 'completed' && 'Completed'}
-              {automationStatus === 'interrupted' && 'Interrupted'}
-              {automationStatus === 'error' && 'Error'}
+              {engineStatusLabel[automationStatus] || automationStatus}
             </span>
           </div>
         </div>

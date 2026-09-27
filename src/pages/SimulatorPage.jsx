@@ -1,3 +1,5 @@
+import { useTranslation } from '../LanguageContext'
+
 /**
  * SimulatorPage — Customer Request Simulator
  * All logic (handleProcessCustomerRequest, recording gate, etc.) is preserved exactly.
@@ -16,18 +18,20 @@ export default function SimulatorPage({
   onProcess,
   onQuickFill,
 }) {
+  const { t } = useTranslation()
+
   return (
     <div className="page-content">
       <div className="panel simulator-panel">
         <div className="panel-header">
           <div>
-            <span className="panel-title">Customer Request Simulator</span>
+            <span className="panel-title">{t('simulator.title', 'Customer Request Simulator')}</span>
             <p className="dim-text" style={{ marginTop: 4 }}>
-              Submit realistic customer requests to trigger business workflows
+              {t('simulator.subtitle', 'Submit realistic customer requests to trigger business workflows')}
             </p>
           </div>
           <div className="quick-fill-row">
-            <span className="dim-text" style={{ fontSize: 12 }}>Presets:</span>
+            <span className="dim-text" style={{ fontSize: 12 }}>{t('common.presets', 'Presets:')}</span>
             <button className="preset-btn" onClick={() => onQuickFill('Rahul', 'Product issue', 'invoice.pdf')}>Rahul</button>
             <button className="preset-btn" onClick={() => onQuickFill('Amit', 'Refund request', 'receipt.png')}>Amit</button>
             <button className="preset-btn" onClick={() => onQuickFill('Raj', 'Account upgrade', 'contract.pdf')}>Raj</button>
@@ -36,7 +40,7 @@ export default function SimulatorPage({
 
         {!isRecording && (
           <div className="info-banner">
-            Recording is not active. Start recording from the sidebar before submitting a request.
+            {t('simulator.notActiveBanner', 'Recording is not active. Start recording from the sidebar before submitting a request.')}
           </div>
         )}
 
@@ -47,11 +51,11 @@ export default function SimulatorPage({
         <form onSubmit={onProcess} className="simulator-form-new">
           <div className="sim-fields">
             <div className="sim-field">
-              <label htmlFor="cust-name">Customer Name</label>
+              <label htmlFor="cust-name">{t('simulator.customerNameLabel', 'Customer Name')}</label>
               <input
                 id="cust-name"
                 type="text"
-                placeholder="e.g. Rahul"
+                placeholder={t('simulator.customerNamePlaceholder', 'e.g. Rahul')}
                 value={customerName}
                 onChange={e => { setCustomerName(e.target.value); setSimulatorError('') }}
                 className="form-input"
@@ -59,11 +63,11 @@ export default function SimulatorPage({
               />
             </div>
             <div className="sim-field">
-              <label htmlFor="cust-req">Customer Request</label>
+              <label htmlFor="cust-req">{t('simulator.customerRequestLabel', 'Customer Request')}</label>
               <input
                 id="cust-req"
                 type="text"
-                placeholder="e.g. Product issue"
+                placeholder={t('simulator.customerRequestPlaceholder', 'e.g. Product issue')}
                 value={customerRequest}
                 onChange={e => { setCustomerRequest(e.target.value); setSimulatorError('') }}
                 className="form-input"
@@ -71,11 +75,11 @@ export default function SimulatorPage({
               />
             </div>
             <div className="sim-field">
-              <label htmlFor="cust-att">Attachment / File</label>
+              <label htmlFor="cust-att">{t('simulator.attachmentLabel', 'Attachment / File')}</label>
               <input
                 id="cust-att"
                 type="text"
-                placeholder="e.g. invoice.pdf"
+                placeholder={t('simulator.attachmentPlaceholder', 'e.g. invoice.pdf')}
                 value={attachmentName}
                 onChange={e => { setAttachmentName(e.target.value); setSimulatorError('') }}
                 className="form-input"
@@ -85,7 +89,7 @@ export default function SimulatorPage({
           </div>
           <div className="sim-submit-row">
             <button type="submit" className="btn btn-primary">
-              Process Customer Request
+              {t('simulator.submitBtn', 'Process Customer Request')}
             </button>
           </div>
         </form>

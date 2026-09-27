@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Trash2 } from 'lucide-react'
+import { useTranslation } from '../LanguageContext'
 
 export default function HistoryPage({
   historyRecords = [],
   onDeleteHistoryRecord,
 }) {
+  const { t } = useTranslation()
   const [selectedWorkflowId, setSelectedWorkflowId] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(null) // { id, workflowName }
 
@@ -40,6 +42,14 @@ export default function HistoryPage({
     return 'badge badge-dim badge-sm'
   }
 
+  const formatStatus = (status) => {
+    if (status === 'Completed') return t('common.completed', 'Completed')
+    if (status === 'Approved') return t('workflows.approved', 'Approved')
+    if (status === 'Rejected') return t('workflows.rejected', 'Rejected')
+    if (status === 'Interrupted') return t('common.interrupted', 'Interrupted')
+    return status
+  }
+
   return (
     <div className="page-content">
       {/* Workflow filter dropdown */}
@@ -50,7 +60,7 @@ export default function HistoryPage({
             value={selectedWorkflowId}
             onChange={e => setSelectedWorkflowId(e.target.value)}
           >
-            <option value="">All Workflows</option>
+            <option value="">{t('history.allWorkflows', 'All Workflows')}</option>
             {uniqueWorkflows.map(w => (
               <option key={w.id} value={w.id}>{w.name}</option>
             ))}
@@ -62,19 +72,19 @@ export default function HistoryPage({
       <div className="panel">
         {filtered.length === 0 ? (
           <div className="empty-state" style={{ padding: '60px 24px' }}>
-            <p>No execution history yet.</p>
-            <small>Deleted workflows will appear here in the recycle bin.</small>
+            <p>{t('history.noHistory', 'No execution history yet.')}</p>
+            <small>{t('history.noHistorySub', 'Deleted workflows will appear here in the recycle bin.')}</small>
           </div>
         ) : (
           <div className="table-wrap">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Date</th>
-                  <th>Workflow</th>
-                  <th>Actions</th>
-                  <th>Completed</th>
-                  <th>Status</th>
+                  <th>{t('history.tableDate', 'Date')}</th>
+                  <th>{t('history.tableWorkflow', 'Workflow')}</th>
+                  <th>{t('history.tableActions', 'Actions')}</th>
+                  <th>{t('history.tableCompleted', 'Completed')}</th>
+                  <th>{t('history.tableStatus', 'Status')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -87,14 +97,14 @@ export default function HistoryPage({
                     <td className="td-num">{record.completed}</td>
                     <td>
                       <span className={statusBadgeClass(record.status)}>
-                        {record.status}
+                        {formatStatus(record.status)}
                       </span>
                     </td>
                     <td>
                       <button
                         className="icon-btn"
                         style={{ color: 'var(--red)', borderColor: 'var(--red-border)' }}
-                        title={`Delete history for ${record.workflowName}`}
+                        title={t('common.delete', 'Delete')}
                         onClick={() => handleDeleteClick(record)}
                       >
                         <Trash2 size={13} />
@@ -113,11 +123,11 @@ export default function HistoryPage({
         <div className="modal-overlay">
           <div className="modal-card">
             <div className="modal-header">
-              <span className="modal-title">Delete Workflow History</span>
+              <span className="modal-title">{t('history.deleteModalTitle', 'Delete Workflow History')}</span>
             </div>
             <div className="modal-body">
               <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6 }}>
-                Are you sure you want to permanently delete {confirmDelete.workflowName}?
+                {t('history.deleteModalPrompt', { name: confirmDelete.workflowName }, `Are you sure you want to permanently delete ${confirmDelete.workflowName}?`)}
               </p>
             </div>
             <div className="modal-actions">
@@ -125,13 +135,13 @@ export default function HistoryPage({
                 className="btn btn-ghost btn-sm"
                 onClick={() => setConfirmDelete(null)}
               >
-                No
+                {t('common.no', 'No')}
               </button>
               <button
                 className="btn btn-danger btn-sm"
                 onClick={handleConfirmYes}
               >
-                Yes
+                {t('common.yes', 'Yes')}
               </button>
             </div>
           </div>

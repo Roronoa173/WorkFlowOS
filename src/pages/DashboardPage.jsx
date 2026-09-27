@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Clock, Zap, Play, TrendingUp, ChevronRight, ChevronDown, Trash2 } from 'lucide-react'
 import WorkflowDiagram from '../components/WorkflowDiagram'
 import SimulatorPage from './SimulatorPage'
+import { useTranslation } from '../LanguageContext'
 
 const DEMO_SEQUENCE = ['Gmail', 'Download', 'CRM', 'Slack']
 
@@ -25,6 +26,7 @@ export default function DashboardPage({
   onProcessCustomerRequest,
   onQuickFill,
 }) {
+  const { t } = useTranslation()
   const [expandedSessions, setExpandedSessions] = useState({})
   const [workflowToDelete, setWorkflowToDelete] = useState(null)
 
@@ -49,16 +51,16 @@ export default function DashboardPage({
       {/* Welcome */}
       <div className="dashboard-welcome">
         <div>
-          <h2 className="welcome-heading">Welcome back</h2>
+          <h2 className="welcome-heading">{t('dashboard.welcomeHeading', 'Welcome back')}</h2>
           <p className="welcome-sub">
             {isRecording
-              ? 'Recording is active — workflow patterns are being monitored.'
-              : 'Start recording to begin monitoring your workflows.'}
+              ? t('dashboard.recActiveSub', 'Recording is active — workflow patterns are being monitored.')
+              : t('dashboard.recInactiveSub', 'Start recording to begin monitoring your workflows.')}
           </p>
         </div>
         <div className={`rec-indicator ${isRecording ? 'rec-indicator-on' : ''}`}>
           <span className="rec-dot-sm" />
-          Online
+          {t('common.online', 'Online')}
         </div>
       </div>
 
@@ -68,28 +70,28 @@ export default function DashboardPage({
           <div className="kpi-icon kpi-icon-blue"><Clock size={16} /></div>
           <div className="kpi-body">
             <span className="kpi-value">{hoursSaved}h</span>
-            <span className="kpi-label">Hours Saved</span>
+            <span className="kpi-label">{t('dashboard.hoursSaved', 'Hours Saved')}</span>
           </div>
         </div>
         <div className="kpi-card">
           <div className="kpi-icon kpi-icon-purple"><Zap size={16} /></div>
           <div className="kpi-body">
             <span className="kpi-value">{detectedResult.detected ? detectedResult.repetitions : 0}</span>
-            <span className="kpi-label">Workflows Discovered</span>
+            <span className="kpi-label">{t('dashboard.workflowsDiscovered', 'Workflows Discovered')}</span>
           </div>
         </div>
         <div className="kpi-card">
           <div className="kpi-icon kpi-icon-green"><Play size={16} /></div>
           <div className="kpi-body">
             <span className="kpi-value">{workflowsRun}</span>
-            <span className="kpi-label">Automations Run</span>
+            <span className="kpi-label">{t('dashboard.automationsRun', 'Automations Run')}</span>
           </div>
         </div>
         <div className="kpi-card">
           <div className="kpi-icon kpi-icon-amber"><TrendingUp size={16} /></div>
           <div className="kpi-body">
             <span className="kpi-value">{successRate}</span>
-            <span className="kpi-label">Success Rate</span>
+            <span className="kpi-label">{t('dashboard.successRate', 'Success Rate')}</span>
           </div>
         </div>
       </div>
@@ -114,13 +116,13 @@ export default function DashboardPage({
       {/* Dedicated Workflow Lists Section */}
       <div className="dash-card">
         <div className="dash-card-header">
-          <span className="dash-card-title">Workflow Lists</span>
-          <span className="badge badge-dim badge-sm">{workflowSessions.length} total</span>
+          <span className="dash-card-title">{t('dashboard.workflowLists', 'Workflow Lists')}</span>
+          <span className="badge badge-dim badge-sm">{workflowSessions.length} {t('common.total', 'total')}</span>
         </div>
         {workflowSessions.length === 0 ? (
           <div className="empty-state">
-            <p>No workflow sessions created yet.</p>
-            <small>Press Start in Monitoring to name and begin a new workflow session.</small>
+            <p>{t('dashboard.noSessions', 'No workflow sessions created yet.')}</p>
+            <small>{t('dashboard.noSessionsSub', 'Press Start in Monitoring to name and begin a new workflow session.')}</small>
           </div>
         ) : (
           <div className="dash-wf-list">
@@ -140,14 +142,14 @@ export default function DashboardPage({
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {session.id === activeSessionId && isRecording && (
-                        <span className="badge badge-green badge-sm">Active Recording</span>
+                        <span className="badge badge-green badge-sm">{t('dashboard.activeRecording', 'Active Recording')}</span>
                       )}
                       <span className="dim-text" style={{ fontSize: 11 }}>{session.createdAt}</span>
                       <button
                         type="button"
                         className="icon-btn"
                         style={{ color: 'var(--red)', padding: 4 }}
-                        title="Delete workflow"
+                        title={t('common.delete', 'Delete')}
                         onClick={(e) => {
                           e.stopPropagation()
                           setWorkflowToDelete(session)
@@ -162,37 +164,37 @@ export default function DashboardPage({
                     <div className="dash-wf-body">
                       <div className="dash-wf-meta-grid">
                         <div className="dash-wf-field">
-                          <span className="field-label-sm">Workflow Name</span>
+                          <span className="field-label-sm">{t('dashboard.workflowNameLabel', 'Workflow Name')}</span>
                           <span className="field-val">{session.name}</span>
                         </div>
                         <div className="dash-wf-field">
-                          <span className="field-label-sm">Session Status</span>
-                          <span className="field-val">{session.id === activeSessionId && isRecording ? 'Active Recording' : 'Completed / Saved'}</span>
+                          <span className="field-label-sm">{t('dashboard.sessionStatusLabel', 'Session Status')}</span>
+                          <span className="field-val">{session.id === activeSessionId && isRecording ? t('dashboard.activeRecording', 'Active Recording') : t('dashboard.completedSaved', 'Completed / Saved')}</span>
                         </div>
                         <div className="dash-wf-field">
-                          <span className="field-label-sm">Total Activities</span>
-                          <span className="field-val">{sessionActivities.length} events ({sessionBusiness.length} business)</span>
+                          <span className="field-label-sm">{t('dashboard.totalActivitiesLabel', 'Total Activities')}</span>
+                          <span className="field-val">{sessionActivities.length} {t('common.events', 'events')} ({sessionBusiness.length} {t('common.business', 'business')})</span>
                         </div>
                         <div className="dash-wf-field">
-                          <span className="field-label-sm">Discovered Status</span>
-                          <span className="field-val">{session.detectedResult?.detected ? `${session.detectedResult.repetitions}x repeated` : 'Monitoring'}</span>
+                          <span className="field-label-sm">{t('dashboard.discoveredStatusLabel', 'Discovered Status')}</span>
+                          <span className="field-val">{session.detectedResult?.detected ? `${session.detectedResult.repetitions}x ${t('discoveries.repeated', 'repeated')}` : t('dashboard.monitoringStatus', 'Monitoring')}</span>
                         </div>
                       </div>
 
                       {custInfo && (
                         <div style={{ marginTop: 4 }}>
-                          <span className="field-label-sm" style={{ display: 'block', marginBottom: 4 }}>Customer Information</span>
+                          <span className="field-label-sm" style={{ display: 'block', marginBottom: 4 }}>{t('dashboard.customerInfoLabel', 'Customer Information')}</span>
                           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', background: 'var(--bg-raised)', padding: '8px 12px', borderRadius: 5 }}>
-                            <span style={{ fontSize: 12 }}><strong>Customer:</strong> {custInfo.customer}</span>
-                            <span style={{ fontSize: 12 }}><strong>Request:</strong> {custInfo.request}</span>
-                            <span style={{ fontSize: 12 }}><strong>Attachment:</strong> {custInfo.attachment}</span>
+                            <span style={{ fontSize: 12 }}><strong>{t('common.customer', 'Customer')}:</strong> {custInfo.customer}</span>
+                            <span style={{ fontSize: 12 }}><strong>{t('common.request', 'Request')}:</strong> {custInfo.request}</span>
+                            <span style={{ fontSize: 12 }}><strong>{t('common.attachment', 'Attachment')}:</strong> {custInfo.attachment}</span>
                           </div>
                         </div>
                       )}
 
                       {sessionBusiness.length > 0 && (
                         <div style={{ marginTop: 4 }}>
-                          <span className="field-label-sm" style={{ display: 'block', marginBottom: 6 }}>Recent Process Actions</span>
+                          <span className="field-label-sm" style={{ display: 'block', marginBottom: 6 }}>{t('dashboard.recentActionsLabel', 'Recent Process Actions')}</span>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                             {sessionBusiness.slice(0, 4).map(act => (
                               <div key={act.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)' }}>
@@ -217,22 +219,22 @@ export default function DashboardPage({
         {/* Discovery Overview */}
         <div className="dash-card">
           <div className="dash-card-header">
-            <span className="dash-card-title">Workflow Discovery</span>
-            <button className="link-btn" onClick={() => onNavigate('discoveries')}>View all</button>
+            <span className="dash-card-title">{t('dashboard.workflowDiscovery', 'Workflow Discovery')}</span>
+            <button className="link-btn" onClick={() => onNavigate('discoveries')}>{t('common.viewAll', 'View all')}</button>
           </div>
           {detectedResult.detected ? (
             <div>
               <div className="discovery-alert-row">
-                <span className="badge badge-blue">Pattern Detected</span>
-                <span className="dim-text">{detectedResult.repetitions} repetitions</span>
+                <span className="badge badge-blue">{t('dashboard.patternDetected', 'Pattern Detected')}</span>
+                <span className="dim-text">{detectedResult.repetitions} {t('dashboard.repetitions', 'repetitions')}</span>
               </div>
               <p className="discovery-name">{detectedResult.workflowName}</p>
               <WorkflowDiagram steps={DEMO_SEQUENCE} />
             </div>
           ) : (
             <div className="empty-state">
-              <p>No repeated pattern detected yet.</p>
-              <small>Submit 3+ customer requests to trigger detection.</small>
+              <p>{t('dashboard.noPattern', 'No repeated pattern detected yet.')}</p>
+              <small>{t('dashboard.noPatternSub', 'Submit 3+ customer requests to trigger detection.')}</small>
             </div>
           )}
         </div>
@@ -240,13 +242,13 @@ export default function DashboardPage({
         {/* Recent Activity */}
         <div className="dash-card">
           <div className="dash-card-header">
-            <span className="dash-card-title">Recent Activity</span>
-            <button className="link-btn" onClick={() => onNavigate('activity')}>View all</button>
+            <span className="dash-card-title">{t('dashboard.recentActivity', 'Recent Activity')}</span>
+            <button className="link-btn" onClick={() => onNavigate('activity')}>{t('common.viewAll', 'View all')}</button>
           </div>
           {recentActivity.length === 0 ? (
             <div className="empty-state">
-              <p>No activity recorded yet.</p>
-              <small>Start recording and submit a customer request.</small>
+              <p>{t('dashboard.noActivity', 'No activity recorded yet.')}</p>
+              <small>{t('dashboard.noActivitySub', 'Start recording and submit a customer request.')}</small>
             </div>
           ) : (
             <div className="recent-activity-list">
@@ -269,7 +271,7 @@ export default function DashboardPage({
       {automationState.status !== 'idle' && (
         <div className="dash-card">
           <div className="dash-card-header">
-            <span className="dash-card-title">Automation Engine</span>
+            <span className="dash-card-title">{t('dashboard.automationEngine', 'Automation Engine')}</span>
             <span className={`badge badge-${automationState.status === 'completed' ? 'green' : automationState.status === 'interrupted' ? 'red' : 'blue'}`}>
               {automationState.status}
             </span>
@@ -293,11 +295,11 @@ export default function DashboardPage({
         <div className="modal-overlay" onClick={() => setWorkflowToDelete(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <span className="modal-title">Delete Workflow</span>
+              <span className="modal-title">{t('dashboard.deleteModalTitle', 'Delete Workflow')}</span>
             </div>
             <div className="modal-body">
               <p style={{ margin: 0, fontSize: 14, color: 'var(--text-primary)' }}>
-                Are you sure you want to delete {workflowToDelete.name}?
+                {t('dashboard.deleteModalPrompt', { name: workflowToDelete.name }, `Are you sure you want to delete ${workflowToDelete.name}?`)}
               </p>
             </div>
             <div className="modal-actions">
@@ -306,7 +308,7 @@ export default function DashboardPage({
                 className="btn btn-ghost btn-sm"
                 onClick={() => setWorkflowToDelete(null)}
               >
-                No
+                {t('common.no', 'No')}
               </button>
               <button
                 type="button"
@@ -316,7 +318,7 @@ export default function DashboardPage({
                   setWorkflowToDelete(null)
                 }}
               >
-                Yes
+                {t('common.yes', 'Yes')}
               </button>
             </div>
           </div>
